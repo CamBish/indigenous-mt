@@ -1,7 +1,7 @@
 indigenous-mt
 ==============================
 
-Testing ChatGPT and other LLMs' capabilities to translate Canadian Indigenous Languages, such as Inuktitut and Cree
+Can ChatGPT and other Large Language Models effectively bootstrap translation into low-resource Canadian Indigenous Languages such as Inuktitut and Cree?
 
 Project Organization
 ------------

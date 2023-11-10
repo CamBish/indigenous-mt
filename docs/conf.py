@@ -231,7 +231,7 @@ man_pages = [
 texinfo_documents = [
     ('index', 'indigenous-mt', u'indigenous-mt Documentation',
      u"Cameron Bishop", 'indigenous-mt',
-     'Testing ChatGPT and other LLMs' capabilities to translate Canadian Indigenous Languages, such as Inuktitut and Cree', 'Miscellaneous'),
+     'Can ChatGPT and other Large Language Models effectively bootstrap translation into low-resource Canadian Indigenous Languages such as Inuktitut and Cree?', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
