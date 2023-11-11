@@ -4,12 +4,14 @@ import re
 import time
 import openai
 import pandas as pd
-from dotenv import load_dotenv
+import dotenv
 from nltk.translate.bleu_score import sentence_bleu
 from scripts.utils import extract_and_align_gold_standard, load_parallel_corpus, eval_results
 from scripts.chat import n_shot_prompting, chat_completion_request_API
 
-load_dotenv()
+project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
+dotenv_path = os.path.join(project_dir, '.env')
+dotenv.load_dotenv(dotenv_path)
 
 #Constants
 GPT_MODEL = "gpt-3.5-turbo" #which GPT model to call
