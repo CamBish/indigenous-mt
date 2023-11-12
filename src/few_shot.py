@@ -1,13 +1,12 @@
 # Set imports, define constants, and load OpenAI API key
 import os
-import re
 import time
+import sys
 import openai
 import pandas as pd
 import dotenv
-from nltk.translate.bleu_score import sentence_bleu
-from scripts.utils import extract_and_align_gold_standard, load_parallel_corpus, eval_results
-from scripts.chat import n_shot_prompting, chat_completion_request_API
+from src.scripts.utils import extract_and_align_gold_standard, load_parallel_corpus, eval_results
+from src.scripts.chat import n_shot_prompting
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, '.env')
@@ -35,9 +34,9 @@ try:
         print("API Key Obtained Successfully!")
 except Exception:
     print("Error reading OpenAI API key from environment variable")
-    exit(1)
+    sys.exit(1)
 
-#%%
+
 # Load all relevant data, such as gold standard and parallel corpus data
 df = load_parallel_corpus(PATH)
 
@@ -55,14 +54,12 @@ Transliterate the text to roman characters with a prefix that says "Romanization
 Step 2 - Translate the romanized text from step 1 into {TGT} with a prefix that says "Translation: " ###
 '''
 
-#%%
-
 # Perform n-shot promptings with varied number of examples
 for n_shots in range(1, MAX_N_SHOTS):
     #random subset of gold standard for few-shot examples
     gs_subset = gs_df.sample(n=n_shots)
-    
-    #measure time taken
+
+   #measure time taken
     start = time.time()
     
     #prompt GPT
@@ -76,10 +73,10 @@ for n_shots in range(1, MAX_N_SHOTS):
     
     print(f'Average time per sample: {avg_time}')
     
-    display(rdf)
+    print(rdf)
     rdf = eval_results(rdf)
     out_path = f'results/{GPT_MODEL}/{N_SAMPLES}-few_shot-{n_shots}.pkl'
     
     rdf.to_pickle(out_path)
 
-# %%
+
