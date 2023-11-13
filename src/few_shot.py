@@ -13,12 +13,12 @@ dotenv_path = os.path.join(project_dir, '.env')
 dotenv.load_dotenv(dotenv_path)
 
 #Constants
-GPT_MODEL = "gpt-3.5-turbo" #which GPT model to call
-SRC = "Inuktitut" #source language
-TGT = "English" #taget language
-DOM = "Hearings from a Legislative Assembly" #domain of text
-PATH = "inuk_data/norm/test"
-GS_PATH_PREFIX = 'IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401'
+GPT_MODEL = "gpt-3.5-turbo"
+SOURCE_LANGUAGE = "Inuktitut"
+TARGET_LANGUAGE = "English"
+TEXT_DOMAIN = "Hearings from a Legislative Assembly"
+PATH = "inuk_data/norm/test" # TODO update to new data
+GS_PATH_PREFIX = 'IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401' # TODO change name
 N_SAMPLES = 1000 #number of samples
 MAX_N_SHOTS = 3 #number of shots
 
@@ -48,10 +48,10 @@ df_subset = df.sample(n=N_SAMPLES)
 # System message to prime assisstant for translation
 sys_msg = f'''You are a machine translation system that operates in two steps. 
 
-Step 1 - The user will provide {SRC} text denoted by "Text: ". 
+Step 1 - The user will provide {SOURCE_LANGUAGE} text denoted by "Text: ". 
 Transliterate the text to roman characters with a prefix that says "Romanization: ". 
 
-Step 2 - Translate the romanized text from step 1 into {TGT} with a prefix that says "Translation: " ###
+Step 2 - Translate the romanized text from step 1 into {TARGET_LANGUAGE} with a prefix that says "Translation: " ###
 '''
 
 # Perform n-shot promptings with varied number of examples
