@@ -1,22 +1,32 @@
-import re
 import os
+import re
 import xml.etree.ElementTree as ET
+
 import openai
 import pandas as pd
-from tenacity import retry, wait_random_exponential, stop_after_attempt
-from nltk.translate.bleu_score import sentence_bleu
-from litellm import completion
 from dotenv import load_dotenv
+from litellm import completion
+from nltk.translate.bleu_score import sentence_bleu
+from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
 load_dotenv(dotenv_path)
 
 
-def load_environment_variables():
-    project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
-    dotenv_path = os.path.join(project_dir, ".env")
-    load_dotenv(dotenv_path)
+def check_environment_variables():
+    """
+    Checks if all the required environment variables are set.
+    This function checks if the following environment variables are set:
+    - OPENAI_API_KEY: The API key for the OpenAI service.
+    - MODEL: The name of the model to be used.
+    - SOURCE_LANGUAGE: The source language for translation.
+    - TARGET_LANGUAGE: The target language for translation.
+    - N_SAMPLES: The number of samples to generate during translation.
+    - MAX_N_SHOTS: The maximum number of shots to take during translation.
+    - TEXT_DOMAIN: The domain of the text to be translated.
+    If any of these environment variables are not set, a KeyError is raised.
+    """
 
     if not all(
         [
@@ -24,8 +34,8 @@ def load_environment_variables():
             os.environ.get("MODEL"),
             os.environ.get("SOURCE_LANGUAGE"),
             os.environ.get("TARGET_LANGUAGE"),
-            os.environ.get("N_SAMPLES"),
-            os.environ.get("MAX_N_SHOTS"),
+            # os.environ.get("N_SAMPLES"),
+            # os.environ.get("MAX_N_SHOTS"),
             os.environ.get("TEXT_DOMAIN"),
         ]
     ):
@@ -122,7 +132,7 @@ def load_parallel_corpus(path: str):
     Returns:
         pd.DataFrame: Dataframe with data from parallel corpus
     """
-    data = {"source_text": [], "target_text": []}
+    data: dict = {"source_text": [], "target_text": []}
     source_filename = f"{path}.en"
     target_filename = f"{path}.iu"
 
@@ -173,7 +183,7 @@ def chat_completion_request_api(
     max_tokens=None,
     stop=None,
     n=None,
-    model=os.environ.get("MODEL"),
+    model=None,
 ):
     """
     Wrapper function for creating chat completion request through OpenAI.
@@ -186,11 +196,12 @@ def chat_completion_request_api(
         max_tokens (int, optional): An integer representing the maximum number of tokens. Defaults to None.
         stop (str, optional): A string representing the stopping condition for generating text. Defaults to None.
         n (int, optional): An integer representing the number of completions to generate. Defaults to None.
-        model (str, optional): A string representing the model to be used. Defaults to "GPT_MODEL".
+        model (str, optional): A string representing the model to be used. Defaults to "MODEL".
 
     Returns:
         ChatCompletion: An instance of the ChatCompletion class.
     """
+    model = os.environ.get("MODEL", "gpt-3.5-turbo")
     json_data = {"model": model, "messages": messages}
     if functions is not None:
         json_data["functions"] = functions
@@ -228,6 +239,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
         pandas.DataFrame: A dataframe containing the results of the n-shot prompting.
     """
 
+    TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
     # Select a random subset of examples from the gold standard and PLL corpus
     gs_subset = gold_std.sample(n=n_shots, replace=False)
     pc_subset = pll_corpus.sample(n=n_samples, replace=False)
@@ -257,7 +269,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
             {"role": "user", "content": examples},
             {
                 "role": "user",
-                "content": f"Provide the {TGT} transliteration and translation for the following text: {src_txt} ###",
+                "content": f"Provide the {TARGET_LANGUAGE} transliteration and translation for the following text: {src_txt} ###",
             },
         ]
         max_attempts = 5

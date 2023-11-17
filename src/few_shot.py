@@ -1,18 +1,20 @@
-# Set imports, define constants, and load OpenAI API key
 import os
 import sys
 import time
 
 import dotenv
 import openai
-import pandas as pd
 
 from utils import (
+    check_environment_variables,
     eval_results,
     extract_and_align_gold_standard,
     load_parallel_corpus,
     n_shot_prompting,
 )
+
+N_SAMPLES = 1000
+MAX_N_SHOTS = 5
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
@@ -23,26 +25,21 @@ PATH = "inuk_data/norm/test"  # TODO update to new data
 GOLD_STANDARD_PATH_PREFIX = "IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401"  # TODO change name
 
 # Check if required environment variables are set
-if not all(
-    [
-        os.environ.get("OPENAI_API_KEY"),
-        os.environ.get("MODEL"),
-        os.environ.get("SOURCE_LANGUAGE"),
-        os.environ.get("TARGET_LANGUAGE"),
-        os.environ.get("N_SAMPLES"),
-        os.environ.get("MAX_N_SHOTS"),
-        os.environ.get("TEXT_DOMAIN"),
-    ]
-):
-    raise KeyError("Error: Required environment variables are not set")
+try:
+    check_environment_variables()
+except KeyError:
+    print(
+        "Error: Required environment variables are not set"
+    )  # TODO include which variables are missing
+    sys.exit()
 
 # Load constants from environment variables
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 MODEL = os.environ.get("MODEL")
 SOURCE_LANGUAGE = os.environ.get("SOURCE_LANGUAGE")
 TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
-N_SAMPLES = os.environ.get("N_SAMPLES")
-MAX_N_SHOTS = os.environ.get("MAX_N_SHOTS")
+# N_SAMPLES = os.environ.get("N_SAMPLES")
+# MAX_N_SHOTS = os.environ.get("MAX_N_SHOTS")
 TEXT_DOMAIN = os.environ.get("TEXT_DOMAIN")
 # Check if OUTFILE directory does not exist, make it
 if not os.path.exists(f"results/{MODEL}"):
@@ -56,10 +53,10 @@ gs_df = extract_and_align_gold_standard(GOLD_STANDARD_PATH_PREFIX)
 df_subset = df.sample(n=N_SAMPLES)
 
 # System message to prime assisstant for translation
-sys_msg = f"""You are a machine translation system that operates in two steps. 
+sys_msg = f"""You are a machine translation system that operates in two steps.
 
-Step 1 - The user will provide {SOURCE_LANGUAGE} text denoted by "Text: ". 
-Transliterate the text to roman characters with a prefix that says "Romanization: ". 
+Step 1 - The user will provide {SOURCE_LANGUAGE} text denoted by "Text: ".
+Transliterate the text to roman characters with a prefix that says "Romanization: ".
 
 Step 2 - Translate the romanized text from step 1 into {TARGET_LANGUAGE} with a prefix that says "Translation: " ###
 """
