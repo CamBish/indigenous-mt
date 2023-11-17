@@ -14,8 +14,15 @@ ENGLISH = "en"
 
 def preprocess(input_file_path: str, output_file_path: str, file_language: str) -> None:
     """
-    Preprocesses a text file and writes the preprocessed lines to a new file.
-    ...
+    Preprocesses an input file based on the provided file language and saves the preprocessed content to an output file.
+
+    Parameters:
+        input_file_path (str): The path to the input file.
+        output_file_path (str): The path to the output file.
+        file_language (str): The language of the input file.
+
+    Returns:
+        None
     """
     with open(input_file_path, 'r', encoding='utf-8') as file:
         lines: list[str] = file.readlines()

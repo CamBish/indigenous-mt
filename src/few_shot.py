@@ -18,7 +18,7 @@ SOURCE_LANGUAGE = "Inuktitut"
 TARGET_LANGUAGE = "English"
 TEXT_DOMAIN = "Hearings from a Legislative Assembly"
 PATH = "inuk_data/norm/test" # TODO update to new data
-GS_PATH_PREFIX = 'IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401' # TODO change name
+GOLD_STANDARD_PATH_PREFIX = 'IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401' # TODO change name
 N_SAMPLES = 1000 #number of samples
 MAX_N_SHOTS = 3 #number of shots
 
@@ -40,8 +40,7 @@ except Exception:
 # Load all relevant data, such as gold standard and parallel corpus data
 df = load_parallel_corpus(PATH)
 
-gs_df = extract_and_align_gold_standard(GS_PATH_PREFIX)
-
+gs_df = extract_and_align_gold_standard(GOLD_STANDARD_PATH_PREFIX)
 
 df_subset = df.sample(n=N_SAMPLES)
 
