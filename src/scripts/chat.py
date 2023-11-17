@@ -91,12 +91,14 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
     # Empty string to store examples for few-shot learning
     examples = ''
 
+    #TODO move into separate function
     # Parse gold standard dataframe to get examples
     for row in gs_subset.iterrows():
         src_example = row['src_lang']
         tgt_example = row['tgt_lang']
 
         examples += f'Text: {src_example} | Translation: {tgt_example} ###\n'
+
     
     # Iterate over the dataframe subset
     for row in pc_subset.iterrows():
@@ -114,6 +116,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
         while attempts < max_attempts:
             try:
+                #TODO should be made into a function
                 res = chat_completion_request_api(messages=message)
                 pred_txt = res["choices"][0]['message']['content']
                 rom_txt = re.search(r'Romanization: (.+?)\n',pred_txt).group(1).strip('[]""')
@@ -129,6 +132,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
                 break  # Exit the loop if the API call is successful
 
+            #TODO change exeception to be more specific
             except Exception as err:
                 print(f"Exception: {err}")
                 attempts += 1
