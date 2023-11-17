@@ -1,12 +1,10 @@
-
-
 import os
 import re
 import openai
 import pandas as pd
 from dotenv import load_dotenv
 from nltk.translate.bleu_score import sentence_bleu
-from scripts.utils import *
+from utils import *
 
 load_dotenv()
 
