@@ -1,9 +1,9 @@
 import os
 import re
-import xml.etree.ElementTree as ET
 
 import openai
 import pandas as pd
+from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
@@ -34,8 +34,6 @@ def check_environment_variables():
             os.environ.get("MODEL"),
             os.environ.get("SOURCE_LANGUAGE"),
             os.environ.get("TARGET_LANGUAGE"),
-            # os.environ.get("N_SAMPLES"),
-            # os.environ.get("MAX_N_SHOTS"),
             os.environ.get("TEXT_DOMAIN"),
         ]
     ):
@@ -275,16 +273,17 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
         max_attempts = 5
         attempts = 0
 
+        # Loop until the API call is successful or the maximum number of attempts is reached
         while attempts < max_attempts:
             try:
                 # TODO should be made into a function
                 res = chat_completion_request_api(messages=message)
                 pred_txt = res["choices"][0]["message"]["content"]
                 rom_txt = (
-                    re.search(r"Romanization: (.+?)\n", pred_txt).group(1).strip('[]""')
+                    re.search(r"Romanization: (.+?)\n", pred_txt).group(1).strip("[]")
                 )
                 trans_txt = (
-                    re.search(r"Translation: (.+?)$", pred_txt).group(1).strip('[]""')
+                    re.search(r"Translation: (.+?)$", pred_txt).group(1).strip("[]")
                 )
 
                 src_txt = src_txt.strip("[]")

@@ -38,9 +38,8 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 MODEL = os.environ.get("MODEL")
 SOURCE_LANGUAGE = os.environ.get("SOURCE_LANGUAGE")
 TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
-# N_SAMPLES = os.environ.get("N_SAMPLES")
-# MAX_N_SHOTS = os.environ.get("MAX_N_SHOTS")
 TEXT_DOMAIN = os.environ.get("TEXT_DOMAIN")
+
 # Check if OUTFILE directory does not exist, make it
 if not os.path.exists(f"results/{MODEL}"):
     os.makedirs(f"results/{MODEL}")
