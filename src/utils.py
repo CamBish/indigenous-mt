@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Dict, List, Optional
 
 import openai
 import pandas as pd
@@ -7,6 +8,7 @@ from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
+from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -170,6 +172,72 @@ def eval_results(res_df: pd.DataFrame):
     print(f"Max BLEU score: {max_bleu}")
 
     return res_df
+
+
+# class ChatCompletion(BaseModel):
+#     """
+#     Wrapper class for creating chat completion requests.
+
+#     Attributes:
+#         messages (List[Dict[str, str]]): A list of messages for the chat completion.
+#         functions (Optional[str]): A string representing the functions to be used.
+#         function_call (Optional[str]): A string representing the function call to be used.
+#         temperature (float, optional): A float representing the temperature for generating text. Defaults to 0.
+#         max_tokens (Optional[int]): An integer representing the maximum number of tokens. Defaults to None.
+#         stop (Optional[str]): A string representing the stopping condition for generating text. Defaults to None.
+#         n (Optional[int]): An integer representing the number of completions to generate. Defaults to None.
+#         model (Optional[str]): A string representing the model to be used. Defaults to "MODEL".
+
+#     """
+
+#     class Config:
+#         messages: List[Dict[str, str]]
+#         functions: Optional[str]
+#         function_call: Optional[str]
+#         temperature: float = 0
+#         max_tokens: Optional[int] = None
+#         stop: Optional[str] = None
+#         n: Optional[int] = None
+#         model: Optional[str] = None
+
+#         @validator("model")
+#         def model_is_set(cls, model):
+#             if model is None:
+#                 model = os.environ.get("MODEL", "gpt-3.5-turbo")
+#             return model
+
+#         def __init__(
+#             self,
+#             messages: List[str],
+#             functions: Optional[str] = None,
+#             function_call: Optional[str] = None,
+#             temperature: Optional[float] = None,
+#             max_tokens: Optional[int] = None,
+#             stop: Optional[List[str]] = None,
+#             n: Optional[int] = None,
+#             model: Optional[str] = None,
+#         ) -> None:
+#             """
+#             Initialize the class.
+
+#             Args:
+#                 messages (List[str]): The list of messages.
+#                 functions (Optional[Dict[str, Any]]): The dictionary of functions. Default is None.
+#                 function_call (Optional[str]): The function call. Default is None.
+#                 temperature (Optional[float]): The temperature value. Default is None.
+#                 max_tokens (Optional[int]): The maximum tokens. Default is None.
+#                 stop (Optional[List[str]]): The list of stop words. Default is None.
+#                 n (Optional[int]): The number of tokens. Default is None.
+#                 model (Optional[str]): The model name. Default is None.
+#             """
+#             self.messages = messages
+#             self.functions = functions
+#             self.function_call = function_call
+#             self.temperature = temperature
+#             self.max_tokens = max_tokens
+#             self.stop = stop
+#             self.n = n
+#             self.model = model
 
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
