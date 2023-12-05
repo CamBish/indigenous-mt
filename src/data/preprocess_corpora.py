@@ -148,15 +148,15 @@ if __name__ == "__main__":
     for root, _, filenames in os.walk(os.getcwd()):
         for filename in filenames:
             if filename.endswith("_cr.txt") or filename.endswith("_en.txt"):
-                input_file_path = os.path.join(root, filename)
+                in_file_path = os.path.join(root, filename)
                 # set output_file_path to mirror input folder structure but in data/preprocessed/plains-cree
-                output_file_path = input_file_path.replace(
+                out_file_path = in_file_path.replace(
                     "external/Plains-Cree-Corpora/PlainsCree",
                     "preprocessed/plains-cree",
                 )
                 # check if output_file_path directory exists, if not, create it
-                if not os.path.exists(os.path.dirname(output_file_path)):
-                    os.makedirs(os.path.dirname(output_file_path))
+                if not os.path.exists(os.path.dirname(out_file_path)):
+                    os.makedirs(os.path.dirname(out_file_path))
 
                 # print(output_file_path)
-                preprocess(input_file_path, output_file_path)
+                preprocess(in_file_path, out_file_path)
