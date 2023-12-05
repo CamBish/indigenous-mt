@@ -1,13 +1,16 @@
-import os
 import re
+import sys
 
-import openai
 import pandas as pd
 from dotenv import load_dotenv
 from IPython import display
 from nltk.translate.bleu_score import sentence_bleu
 
-from utils import chat_completion_request_api, load_parallel_corpus
+from utils import (
+    chat_completion_request_api,
+    check_environment_variables,
+    load_parallel_corpus,
+)
 
 load_dotenv()
 
@@ -22,11 +25,12 @@ PATH = "inuk_data/norm/test"
 OUTFILE = "res.csv"
 
 try:
-    openai.api_key = os.environ.get("OPENAI_API_KEY")
-    if openai.api_key is None:
-        raise ValueError("OpenAI API key not found in environment variable")
-except ValueError:
-    print("Error: OpenAI API key not found in environment variable")
+    check_environment_variables()
+except KeyError:
+    print(
+        "Error: Required environment variables are not set"
+    )  # TODO include which variables are missing
+    sys.exit()
 
 df = load_parallel_corpus(PATH)
 

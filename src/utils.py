@@ -40,6 +40,44 @@ def check_environment_variables():
         raise KeyError("Error: Required environment variables are not set")
 
 
+def load_gold_standards(gs_dir: str, mode: str = "consensus"):
+    """
+    Loads the gold standard data for a specified mode and file prefix.
+
+    Args:
+        mode (str): Specifies which gold standard files to load.
+        file_prefix (str): filepath to gold standard directory (
+            i.e. data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/)
+    """
+    if mode == "consensus":
+        gs_1_path = f"{gs_dir}/annotator1-consensus/"
+        gs_2_path = f"{gs_dir}/annotator2-consensus/"
+    else:
+        gs_1_path = f"{gs_dir}/annotator1/"
+        gs_2_path = f"{gs_dir}/annotator2/"
+
+    # Get unique file prefixes from gs_1_path
+    gs_1_files = os.listdir(gs_1_path)
+    gs_1_prefixes = {filename.split(".")[0] for filename in gs_1_files}
+
+    # Get unique file prefixes from gs_2_path
+    gs_2_files = os.listdir(gs_2_path)
+    gs_2_prefixes = {filename.split(".")[0] for filename in gs_2_files}
+
+    # Combine the prefixes from both paths
+    file_prefixes = gs_1_prefixes.union(gs_2_prefixes)
+
+    # create dataframe to store all gold standard data
+    gs_df = pd.Dataframe()
+
+    for file_prefix in file_prefixes:
+        df = extract_and_align_gold_standard(file_prefix)
+        # append to gs_df
+        gs_df = gs_df.append(df)
+
+    return gs_df
+
+
 def extract_and_align_gold_standard(file_prefix: str):
     """
     Extracts and aligns the text stored within the gold standards using a specified file prefix.
