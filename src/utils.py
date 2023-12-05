@@ -1,6 +1,5 @@
 import os
 import re
-from typing import Dict, List, Optional
 
 import openai
 import pandas as pd
@@ -8,7 +7,6 @@ from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
-from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
