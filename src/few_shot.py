@@ -23,11 +23,10 @@ dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
 # Load constants from environment variabless
-INUKTITUT_SYLLABIC_PATH = "data/preprocessed/inuktitut-syllabic/tc/test"
-GOLD_STANDARD_PATH_PREFIX = "IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401"  # TODO change name
-GOLD_STANDARD_PATH = (
-    "data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/"
+INUKTITUT_SYLLABIC_PATH = (
+    "/Users/cambish/indigenous-mt/data/preprocessed/inuktitut-syllabic/tc/test"
 )
+GOLD_STANDARD_PATH = "/Users/cambish/indigenous-mt/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/"
 
 # Check if required environment variables are set
 try:
@@ -51,11 +50,9 @@ if not os.path.exists(f"results/{MODEL}"):
 
 # Load all relevant data, such as gold standard and parallel corpus data
 df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
-
-# gs_df = extract_and_align_gold_standard(GOLD_STANDARD_PATH_PREFIX)
-
 gs_df = load_gold_standards(GOLD_STANDARD_PATH)
 
+display(df)
 display(gs_df)
 
 # %%

@@ -50,32 +50,35 @@ def load_gold_standards(gs_dir: str, mode: str = "consensus"):
             i.e. data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/)
     """
     if mode == "consensus":
-        gs_1_path = f"{gs_dir}/annotator1-consensus/"
-        gs_2_path = f"{gs_dir}/annotator2-consensus/"
+        gs_1_path = os.path.join(gs_dir, "annotator1-consensus")
+        gs_2_path = os.path.join(gs_dir, "annotator2-consensus")
     else:
-        gs_1_path = f"{gs_dir}/annotator1/"
-        gs_2_path = f"{gs_dir}/annotator2/"
+        gs_1_path = os.path.join(gs_dir, "annotator1")
+        gs_2_path = os.path.join(gs_dir, "annotator2")
 
     # Get unique file prefixes from gs_1_path
     gs_1_files = os.listdir(gs_1_path)
-    gs_1_prefixes = {filename.split(".")[0] for filename in gs_1_files}
+    gs_1_prefixes = {
+        os.path.join(gs_1_path, filename.split(".")[0]) for filename in gs_1_files
+    }
 
     # Get unique file prefixes from gs_2_path
     gs_2_files = os.listdir(gs_2_path)
-    gs_2_prefixes = {filename.split(".")[0] for filename in gs_2_files}
+    gs_2_prefixes = {
+        os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
+    }
 
     # Combine the prefixes from both paths
     file_prefixes = gs_1_prefixes.union(gs_2_prefixes)
 
     # create dataframe to store all gold standard data
-    gs_df = pd.Dataframe()
+    gs_dfs = []
 
     for file_prefix in file_prefixes:
         df = extract_and_align_gold_standard(file_prefix)
-        # append to gs_df
-        gs_df = gs_df.append(df)
+        gs_dfs.append(df)
 
-    return gs_df
+    return pd.concat(gs_dfs, ignore_index=True)
 
 
 def extract_and_align_gold_standard(file_prefix: str):
