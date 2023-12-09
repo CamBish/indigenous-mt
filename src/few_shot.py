@@ -5,14 +5,14 @@ import time
 
 import dotenv
 import openai
-from IPython.display import display
+import pyarrow.parquet as pq
 
 from utils import (
     check_environment_variables,
     eval_results,
-    load_gold_standards,
-    load_parallel_corpus,
     n_shot_prompting,
+    serialize_gold_standards,
+    serialize_parallel_corpus,
 )
 
 # How many samples to test
@@ -27,6 +27,9 @@ dotenv.load_dotenv(dotenv_path)
 # Load constants from environment variabless
 INUKTITUT_SYLLABIC_PATH = (
     "/Users/cambish/indigenous-mt/data/preprocessed/inuktitut-syllabic/tc/test"
+)
+INUKTITUT_ROMAN_PATH = (
+    "/Users/cambish/indigenous-mt/data/preprocessed/inuktitut-romanized/tc/test"
 )
 GOLD_STANDARD_PATH = "/Users/cambish/indigenous-mt/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/"
 
@@ -50,12 +53,29 @@ TEXT_DOMAIN = os.environ.get("TEXT_DOMAIN")
 if not os.path.exists(f"results/{MODEL}"):
     os.makedirs(f"results/{MODEL}")
 
-# Load all relevant data, such as gold standard and parallel corpus data
-df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
-gold_standard_df = load_gold_standards(GOLD_STANDARD_PATH)
+# if gold standard has not been serialized, do so using parquet
+serialize_gold_standards(input_path=GOLD_STANDARD_PATH)
 
-display(df)
-display(gold_standard_df)
+# if parallel corpus has not been serialized, do so using parquet
+serialize_parallel_corpus(input_path=INUKTITUT_SYLLABIC_PATH)
+serialize_parallel_corpus(
+    input_path=INUKTITUT_ROMAN_PATH,
+    output_path="/Users/cambish/indigenous-mt/data/serialized/roman_parallel_corpus.parquet",
+)
+
+
+# if parallel corpus has not been serialized, do so using parquet
+# if not os.path.exists("data/serialized/parallel_corpus.parquet"):
+#     print("Serializing parallel corpus")
+#     df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
+#     df.to_parquet("data/serialized/parallel_corpus.parquet")
+
+# Load all relevant data, such as gold standard and parallel corpus data
+# df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
+# gold_standard_df = load_gold_standards(GOLD_STANDARD_PATH)
+
+# display(df)
+# display(gold_standard_df)
 # %%
 
 df_subset = df.sample(n=N_SAMPLES)
@@ -71,6 +91,7 @@ Step 2 - Translate the romanized text from step 1 into {TARGET_LANGUAGE} with a 
 
 # Perform n-shot promptings with varied number of examples
 for n_shots in num_shots:
+    print(f"Performing {n_shots} shot experiment")
     # measure time taken
     start = time.time()
     # prompt LLM

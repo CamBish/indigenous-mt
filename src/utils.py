@@ -2,6 +2,7 @@ import os
 import re
 
 import pandas as pd
+import pyarrow.parquet as pq
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
 
@@ -40,6 +41,38 @@ def check_environment_variables():
         ]
     ):
         raise KeyError("Error: Required environment variables are not set")
+
+
+def serialize_gold_standards(
+    input_path: str = "/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard",
+    output_path: str = "/Users/cambish/indigenous-mt/data/serialized/gold_standard.parquet",
+):
+    """
+    Serializes the gold standards to a parquet file. Does not run if the file already exists.
+
+    Args:
+        path (str, optional): Filepath to save the serialized gold standards. Defaults to '/data/serialized/gold_standard.parquet'.
+    """
+    if not os.path.exists(output_path):
+        print("Serializing gold standard")
+        gold_standard_df = load_gold_standards(input_path)
+        gold_standard_df.to_parquet(output_path)
+
+
+def serialize_parallel_corpus(
+    input_path: str = "/data/preprocessed/inuktitut-syllabic/tc/test",
+    output_path: str = "/Users/cambish/indigenous-mt/data/serialized/syllabic_parallel_corpus.parquet",
+):
+    """
+    Serializes the parallel corpus to a parquet file. Does not run if the file already exists.
+
+    Args:
+        path (str, optional): Filepath to save the serialized parallel corpus. Defaults to '/data/serialized/syllabic_parallel_corpus.parquet'.
+    """
+    if not os.path.exists(output_path):
+        print("Serializing parallel corpus")
+        parallel_corpus_df = load_parallel_corpus(input_path)
+        parallel_corpus_df.to_parquet(output_path)
 
 
 def load_gold_standards(gs_dir: str, mode: str = "consensus"):
@@ -348,9 +381,8 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
                 if rom_match is None or trans_match is None:
                     attempts += 1
                     OpenAIError("Invalid output from LLM. Trying again...")
+                    continue
 
-                print(rom_match)
-                print(trans_match)
                 rom_txt = rom_match[1].strip("[]")
                 trans_txt = trans_match[1].strip("[]")
 
