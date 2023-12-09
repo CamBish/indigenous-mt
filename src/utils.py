@@ -316,11 +316,10 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
     examples = n_shot_examples(gold_std, n_shots)
 
+    max_attempts = 5
     # Iterate over the dataframe subset
     for _, row in pc_subset.iterrows():
         src_txt = row["source_text"]
-        tgt_txt = row["target_text"]
-
         # Create the chat conversation messages
         message = [
             {"role": "system", "content": sys_msg},
@@ -330,9 +329,9 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
                 "content": f"Provide the {TARGET_LANGUAGE} transliteration and translation for the following text: {src_txt} ###",
             },
         ]
-        max_attempts = 5
         attempts = 0
 
+        tgt_txt = row["target_text"]
         # Loop until the API call is successful or the maximum number of attempts is reached
         while attempts < max_attempts:
             try:
@@ -346,10 +345,12 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
                 rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
                 trans_match = re.search(r"Translation: (.+?)$", pred_txt)
 
-                if rom_match or trans_match is None:
+                if rom_match is None or trans_match is None:
                     attempts += 1
                     OpenAIError("Invalid output from LLM. Trying again...")
 
+                print(rom_match)
+                print(trans_match)
                 rom_txt = rom_match[1].strip("[]")
                 trans_txt = trans_match[1].strip("[]")
 
