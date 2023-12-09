@@ -1,12 +1,14 @@
 import os
 import re
 
-import openai
 import pandas as pd
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
+
+# from IPython.display import display
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
+from openai import OpenAIError
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -213,72 +215,6 @@ def eval_results(res_df: pd.DataFrame):
     return res_df
 
 
-# class ChatCompletion(BaseModel):
-#     """
-#     Wrapper class for creating chat completion requests.
-
-#     Attributes:
-#         messages (List[Dict[str, str]]): A list of messages for the chat completion.
-#         functions (Optional[str]): A string representing the functions to be used.
-#         function_call (Optional[str]): A string representing the function call to be used.
-#         temperature (float, optional): A float representing the temperature for generating text. Defaults to 0.
-#         max_tokens (Optional[int]): An integer representing the maximum number of tokens. Defaults to None.
-#         stop (Optional[str]): A string representing the stopping condition for generating text. Defaults to None.
-#         n (Optional[int]): An integer representing the number of completions to generate. Defaults to None.
-#         model (Optional[str]): A string representing the model to be used. Defaults to "MODEL".
-
-#     """
-
-#     class Config:
-#         messages: List[Dict[str, str]]
-#         functions: Optional[str]
-#         function_call: Optional[str]
-#         temperature: float = 0
-#         max_tokens: Optional[int] = None
-#         stop: Optional[str] = None
-#         n: Optional[int] = None
-#         model: Optional[str] = None
-
-#         @validator("model")
-#         def model_is_set(cls, model):
-#             if model is None:
-#                 model = os.environ.get("MODEL", "gpt-3.5-turbo")
-#             return model
-
-#         def __init__(
-#             self,
-#             messages: List[str],
-#             functions: Optional[str] = None,
-#             function_call: Optional[str] = None,
-#             temperature: Optional[float] = None,
-#             max_tokens: Optional[int] = None,
-#             stop: Optional[List[str]] = None,
-#             n: Optional[int] = None,
-#             model: Optional[str] = None,
-#         ) -> None:
-#             """
-#             Initialize the class.
-
-#             Args:
-#                 messages (List[str]): The list of messages.
-#                 functions (Optional[Dict[str, Any]]): The dictionary of functions. Default is None.
-#                 function_call (Optional[str]): The function call. Default is None.
-#                 temperature (Optional[float]): The temperature value. Default is None.
-#                 max_tokens (Optional[int]): The maximum tokens. Default is None.
-#                 stop (Optional[List[str]]): The list of stop words. Default is None.
-#                 n (Optional[int]): The number of tokens. Default is None.
-#                 model (Optional[str]): The model name. Default is None.
-#             """
-#             self.messages = messages
-#             self.functions = functions
-#             self.function_call = function_call
-#             self.temperature = temperature
-#             self.max_tokens = max_tokens
-#             self.stop = stop
-#             self.n = n
-#             self.model = model
-
-
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
 def chat_completion_request_api(
     messages,
@@ -323,10 +259,37 @@ def chat_completion_request_api(
 
     try:
         return completion(**json_data)
-    except openai.OpenAIError as e:
+    except OpenAIError as e:
         print("Unable to generate ChatCompletion response")
         print(f"Exception: {e}")
         return e
+
+
+def n_shot_examples(gold_std, n_shots):
+    """
+    Selects a random subset of examples from the gold standard.
+
+    Args:
+        gold_std (pandas.DataFrame): The gold standard dataframe.
+        n_shots (int): The number of examples to include from the gold standard.
+
+    Returns:
+        str: A string containing the examples for few-shot learning.
+    """
+    # Select a random subset of examples from the gold standard
+    gs_subset = gold_std.sample(n=n_shots, replace=False)
+
+    # Empty string to store examples for few-shot learning
+    examples = ""
+
+    # Parse gold standard dataframe to get examples
+    for _, row in gs_subset.iterrows():
+        src_example = row["src_lang"]
+        tgt_example = row["tgt_lang"]
+
+        examples += f"Text: {src_example} | Translation: {tgt_example} ###\n"
+
+    return examples
 
 
 def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
@@ -346,25 +309,15 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
     TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
     # Select a random subset of examples from the gold standard and PLL corpus
-    gs_subset = gold_std.sample(n=n_shots, replace=False)
     pc_subset = pll_corpus.sample(n=n_samples, replace=False)
 
     cols = ["src_txt", "tgt_txt", "rom_txt", "trans_txt"]
     results = []
 
-    # Empty string to store examples for few-shot learning
-    examples = ""
-
-    # TODO move into separate function
-    # Parse gold standard dataframe to get examples
-    for row in gs_subset.iterrows():
-        src_example = row["src_lang"]
-        tgt_example = row["tgt_lang"]
-
-        examples += f"Text: {src_example} | Translation: {tgt_example} ###\n"
+    examples = n_shot_examples(gold_std, n_shots)
 
     # Iterate over the dataframe subset
-    for row in pc_subset.iterrows():
+    for _, row in pc_subset.iterrows():
         src_txt = row["source_text"]
         tgt_txt = row["target_text"]
 
@@ -386,12 +339,19 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
                 # TODO should be made into a function
                 res = chat_completion_request_api(messages=message)
                 pred_txt = res["choices"][0]["message"]["content"]
-                rom_txt = (
-                    re.search(r"Romanization: (.+?)\n", pred_txt).group(1).strip("[]")
-                )
-                trans_txt = (
-                    re.search(r"Translation: (.+?)$", pred_txt).group(1).strip("[]")
-                )
+                if pred_txt is None or pred_txt == "":
+                    attempts += 1
+                    OpenAIError("Empty response. Trying again...")
+
+                rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
+                trans_match = re.search(r"Translation: (.+?)$", pred_txt)
+
+                if rom_match or trans_match is None:
+                    attempts += 1
+                    OpenAIError("Invalid output from LLM. Trying again...")
+
+                rom_txt = rom_match[1].strip("[]")
+                trans_txt = trans_match[1].strip("[]")
 
                 src_txt = src_txt.strip("[]")
 
@@ -410,8 +370,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
                 break  # Exit the loop if the API call is successful
 
-            # TODO change exeception to be more specific
-            except Exception as err:
+            except OpenAIError as err:
                 print(f"Exception: {err}")
                 attempts += 1
 

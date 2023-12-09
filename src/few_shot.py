@@ -15,8 +15,10 @@ from utils import (
     n_shot_prompting,
 )
 
+# How many samples to test
 N_SAMPLES = 1000
-MAX_N_SHOTS = 5
+
+num_shots = [1, 5, 10, 15, 20]
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
@@ -50,11 +52,10 @@ if not os.path.exists(f"results/{MODEL}"):
 
 # Load all relevant data, such as gold standard and parallel corpus data
 df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
-gs_df = load_gold_standards(GOLD_STANDARD_PATH)
+gold_standard_df = load_gold_standards(GOLD_STANDARD_PATH)
 
 display(df)
-display(gs_df)
-
+display(gold_standard_df)
 # %%
 
 df_subset = df.sample(n=N_SAMPLES)
@@ -69,13 +70,11 @@ Step 2 - Translate the romanized text from step 1 into {TARGET_LANGUAGE} with a 
 """
 
 # Perform n-shot promptings with varied number of examples
-for n_shots in range(1, MAX_N_SHOTS):
-    # random subset of gold standard for few-shot examples
-    gs_subset = gs_df.sample(n=n_shots)
+for n_shots in num_shots:
     # measure time taken
     start = time.time()
     # prompt LLM
-    rdf = n_shot_prompting(sys_msg, gs_subset, df_subset, n_shots, N_SAMPLES)
+    rdf = n_shot_prompting(sys_msg, gold_standard_df, df_subset, n_shots, N_SAMPLES)
     end = time.time()
     print(f"Time taken for {n_shots} experiment: {end - start}")
     # estimate average time per sample
@@ -85,3 +84,5 @@ for n_shots in range(1, MAX_N_SHOTS):
     rdf = eval_results(rdf)
     out_path = f"results/{MODEL}/{N_SAMPLES}-few_shot-{n_shots}.pkl"
     rdf.to_pickle(out_path)
+
+# %%
