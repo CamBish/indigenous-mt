@@ -68,10 +68,10 @@ if not os.path.exists(f"results/{MODEL}"):
     os.makedirs(f"results/{MODEL}")
 
 # if gold standard has not been serialized, do so using parquet
-serialize_gold_standards(input_path=GOLD_STANDARD_PATH)
+serialize_gold_standards(input_path=GOLD_STANDARD_PATH, output_path=SERIALIZED_GOLD_STANDARD_PATH)
 
 # if parallel corpus has not been serialized, do so using parquet
-serialize_parallel_corpus(input_path=INUKTITUT_SYLLABIC_PATH)
+serialize_parallel_corpus(input_path=INUKTITUT_SYLLABIC_PATH, output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH)
 serialize_parallel_corpus(
     input_path=INUKTITUT_ROMAN_PATH,
     output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH,
