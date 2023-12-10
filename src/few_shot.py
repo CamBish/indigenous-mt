@@ -26,14 +26,26 @@ dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
 # Load constants from environment variabless
-INUKTITUT_SYLLABIC_PATH = "data/preprocessed/inuktitut-syllabic/tc/test"
-INUKTITUT_ROMAN_PATH = "data/preprocessed/inuktitut-romanized/tc/test"
-GOLD_STANDARD_PATH = (
-    "data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/"
+INUKTITUT_SYLLABIC_PATH = os.path.join(
+    project_dir, "data", "preprocessed", "inuktitut-syllabic", "tc", "test"
+)
+INUKTITUT_ROMAN_PATH = os.path.join(
+    project_dir, "data", "preprocessed", "inuktitut-romanized", "tc", "test"
+)
+GOLD_STANDARD_PATH = os.path.join(
+    project_dir,
+    "data",
+    "external",
+    "Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0",
+    "gold-standard",
 )
 
-SERIALIZED_INUKTITUT_SYLLABIC_PATH = "data/serialized/syllabic_parallel_corpus.parquet"
-SERIALIZED_GOLD_STANDARD_PATH = "data/serialized/gold_standard.parquet"
+SERIALIZED_INUKTITUT_SYLLABIC_PATH = os.path.join(
+    project_dir, "data", "serialized", "syllabic_parallel_corpus.parquet"
+)
+SERIALIZED_GOLD_STANDARD_PATH = os.path.join(
+    project_dir, "data", "serialized", "gold_standard.parquet"
+)
 
 # Check if required environment variables are set
 try:
