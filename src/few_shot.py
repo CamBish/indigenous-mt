@@ -74,6 +74,7 @@ serialize_parallel_corpus(
 # Load serialized data
 df = pq.read_table(SERIALIZED_INUKTITUT_SYLLABIC_PATH).to_pandas()
 gold_standard_df = pq.read_table(SERIALIZED_GOLD_STANDARD_PATH).to_pandas()
+print("Serialized Data loaded")
 
 # Load all relevant data, such as gold standard and parallel corpus data
 # df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
@@ -99,6 +100,7 @@ for n_shots in num_shots:
     print(f"Performing {n_shots} shot experiment")
     # measure time taken
     start = time.time()
+    print(f"Start time: {start}")
     # prompt LLM
     rdf = n_shot_prompting(sys_msg, gold_standard_df, df_subset, n_shots, N_SAMPLES)
     end = time.time()
@@ -108,7 +110,7 @@ for n_shots in num_shots:
     print(f"Average time per sample: {avg_time}")
     print(rdf)
     rdf = eval_results(rdf)
-    out_path = f"results/{MODEL}/{N_SAMPLES}-few_shot-{n_shots}.pkl"
-    rdf.to_pickle(out_path)
+    out_path = f"results/{MODEL}/{N_SAMPLES}-few_shot-{n_shots}.parquet"
+    rdf.to_parquet(out_path)
 
 # %%

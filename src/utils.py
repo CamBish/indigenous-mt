@@ -87,9 +87,11 @@ def load_gold_standards(gs_dir: str, mode: str = "consensus"):
     if mode == "consensus":
         gs_1_path = os.path.join(gs_dir, "annotator1-consensus")
         gs_2_path = os.path.join(gs_dir, "annotator2-consensus")
+        print("loading consensus gold standard")
     else:
         gs_1_path = os.path.join(gs_dir, "annotator1")
         gs_2_path = os.path.join(gs_dir, "annotator2")
+        print("loading individually annotated gold standard")
 
     # Get unique file prefixes from gs_1_path
     gs_1_files = os.listdir(gs_1_path)
