@@ -235,7 +235,7 @@ def eval_results(res_df: pd.DataFrame):
         pd.DataFrame: The input DataFrame with an additional 'bleu_scores' column containing the BLEU scores for each translation.
     """
     bleu_scores = []
-    for row in res_df.iterrows():
+    for _, row in res_df.iterrows():
         reference = row["tgt_txt"].split()
         prediction = row["trans_txt"].split()
 
