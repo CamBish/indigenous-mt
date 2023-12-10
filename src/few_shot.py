@@ -6,6 +6,7 @@ import time
 import dotenv
 import openai
 import pyarrow.parquet as pq
+from IPython.display import display
 
 from utils import (
     check_environment_variables,
@@ -32,6 +33,13 @@ INUKTITUT_ROMAN_PATH = (
     "/Users/cambish/indigenous-mt/data/preprocessed/inuktitut-romanized/tc/test"
 )
 GOLD_STANDARD_PATH = "/Users/cambish/indigenous-mt/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/"
+
+SERIALIZED_INUKTITUT_SYLLABIC_PATH = (
+    "/Users/cambish/indigenous-mt/data/serialized/syllabic_parallel_corpus.parquet"
+)
+SERIALIZED_GOLD_STANDARD_PATH = (
+    "/Users/cambish/indigenous-mt/data/serialized/gold_standard.parquet"
+)
 
 # Check if required environment variables are set
 try:
@@ -60,22 +68,19 @@ serialize_gold_standards(input_path=GOLD_STANDARD_PATH)
 serialize_parallel_corpus(input_path=INUKTITUT_SYLLABIC_PATH)
 serialize_parallel_corpus(
     input_path=INUKTITUT_ROMAN_PATH,
-    output_path="/Users/cambish/indigenous-mt/data/serialized/roman_parallel_corpus.parquet",
+    output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH,
 )
 
-
-# if parallel corpus has not been serialized, do so using parquet
-# if not os.path.exists("data/serialized/parallel_corpus.parquet"):
-#     print("Serializing parallel corpus")
-#     df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
-#     df.to_parquet("data/serialized/parallel_corpus.parquet")
+# Load serialized data
+df = pq.read_table(SERIALIZED_INUKTITUT_SYLLABIC_PATH).to_pandas()
+gold_standard_df = pq.read_table(SERIALIZED_GOLD_STANDARD_PATH).to_pandas()
 
 # Load all relevant data, such as gold standard and parallel corpus data
 # df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
 # gold_standard_df = load_gold_standards(GOLD_STANDARD_PATH)
 
-# display(df)
-# display(gold_standard_df)
+display(df)
+display(gold_standard_df)
 # %%
 
 df_subset = df.sample(n=N_SAMPLES)
