@@ -2,7 +2,8 @@ import os
 import re
 
 import pandas as pd
-import pyarrow.parquet as pq
+
+# import pyarrow.parquet as pq
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
 
