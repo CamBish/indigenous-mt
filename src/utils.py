@@ -43,7 +43,7 @@ def check_environment_variables():
 
 def load_cree_parallel_data(
     input_directory: str
-    ):w
+    ):
     """
     Load Cree data given an input directory. Load any data that has both a _en and _cr text file, and align them
 
