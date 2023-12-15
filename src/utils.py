@@ -2,11 +2,9 @@ import os
 import re
 
 import pandas as pd
-
 # import pyarrow.parquet as pq
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
-
 # from IPython.display import display
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
@@ -43,6 +41,57 @@ def check_environment_variables():
     ):
         raise KeyError("Error: Required environment variables are not set")
 
+def load_cree_parallel_data(
+    input_directory: str
+    ):w
+    """
+    Load Cree data given an input directory. Load any data that has both a _en and _cr text file, and align them
+
+    Args:
+        input_directory (str): The directory to load data from
+    """
+    data = {"cree_text": [], "english_text": []}
+    for root, _, filenames in os.walk(input_directory):
+        for filename in filenames:
+            #check if file has cree and english version
+            if filename.endswith("_cr.txt"):
+                #check if english version exists
+                english_filename = filename.replace("_cr.txt", "_en.txt")
+                if english_filename in filenames:
+                    #load both files using load_parallel_text_data
+                    source_path = os.path.join(root, filename)
+                    target_path = os.path.join(root, english_filename)
+                    temp_data = load_parallel_text_data(source_path, target_path)
+                    data["cree_text"].extend(temp_data["source_text"])
+                    data["english_text"].extend(temp_data["target_text"])
+    
+    return pd.DataFrame(data)
+
+def load_parallel_text_data(
+    source_directory: str,
+    target_directory: str,
+):
+    """Load parallel text data from two UTF-8 encoded text files.
+
+    Args:
+        source_directory (str): path to source text file
+        target_directory (str): path to target text file
+
+    Returns:
+        _type_: _description_
+    """
+    data = {"source_text": [], "target_text": []}
+    with open(source_directory, "r", encoding="utf-8") as source_file, open(
+        target_directory, "r", encoding="utf-8"
+    ) as target_file:
+        for source_line, target_line in zip(source_file, target_file):
+            source_line = source_line.strip()
+            target_line = target_line.strip()
+
+            if source_line and target_line:
+                data["source_text"].append(source_line)
+                data["target_text"].append(target_line)
+    return data
 
 def serialize_gold_standards(
     input_path: str = "/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard",
@@ -209,20 +258,14 @@ def load_parallel_corpus(path: str):
     Returns:
         pd.DataFrame: Dataframe with data from parallel corpus
     """
-    data: dict = {"source_text": [], "target_text": []}
+    data: dict = {"inuktitut_text": [], "english_text": []}
     source_filename = f"{path}.en"
     target_filename = f"{path}.iu"
 
-    with open(source_filename, "r", encoding="utf-8") as f1, open(
-        target_filename, "r", encoding="utf-8"
-    ) as f2:
-        for line1, line2 in zip(f1, f2):
-            line1 = line1.strip()
-            line2 = line2.strip()
-
-            if line1 and line2:  # Only add lines with content
-                data["target_text"].append(line1)
-                data["source_text"].append(line2)
+    # load data from source and target files using load_parallel_text_data
+    temp_data = load_parallel_text_data(source_filename, target_filename)
+    data["inuktitut_text"].extend(temp_data["source_text"])
+    data["english_text"].extend(temp_data["target_text"])
     return pd.DataFrame(data)
 
 
