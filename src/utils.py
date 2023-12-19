@@ -1,10 +1,14 @@
 import os
 import re
+from enum import Enum
+from typing import List, Set, Tuple
 
 import pandas as pd
+
 # import pyarrow.parquet as pq
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
+
 # from IPython.display import display
 from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
@@ -14,6 +18,11 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
 load_dotenv(dotenv_path)
+
+
+class GoldStandardMode(Enum):
+    CONSENSUS = "consensus"
+    INDIVIDUAL = "individual"
 
 
 def check_environment_variables():
@@ -41,72 +50,122 @@ def check_environment_variables():
     ):
         raise KeyError("Error: Required environment variables are not set")
 
-def load_cree_parallel_data(
-    input_directory: str
-    ):
+
+def load_cree_parallel_data(input_directory: str) -> pd.DataFrame:
+    cree_text = []
+    english_text = []
+    filenames = get_filenames(input_directory)
+    for filename in filenames:
+        if has_parallel_cree_english_data(filename, filenames):
+            source_path, target_path = get_cree_and_english_data_paths(
+                input_directory, filename
+            )
+            temp_data = load_parallel_text_data(source_path, target_path)
+            cree_text.extend(temp_data["source_text"])
+            english_text.extend(temp_data["target_text"])
+    return pd.DataFrame({"cree_text": cree_text, "english_text": english_text})
+
+
+def get_filenames(input_directory: str) -> List[str]:
     """
-    Load Cree data given an input directory. Load any data that has both a _en and _cr text file, and align them
+    Get a list of filenames in the specified input directory.
 
     Args:
-        input_directory (str): The directory to load data from
+        input_directory (str): The path to the input directory.
+
+    Returns:
+        List[str]: A list of filenames in the input directory.
     """
-    data = {"cree_text": [], "english_text": []}
-    for root, _, filenames in os.walk(input_directory):
-        for filename in filenames:
-            #check if file has cree and english version
-            if filename.endswith("_cr.txt"):
-                #check if english version exists
-                english_filename = filename.replace("_cr.txt", "_en.txt")
-                if english_filename in filenames:
-                    #load both files using load_parallel_text_data
-                    source_path = os.path.join(root, filename)
-                    target_path = os.path.join(root, english_filename)
-                    temp_data = load_parallel_text_data(source_path, target_path)
-                    data["cree_text"].extend(temp_data["source_text"])
-                    data["english_text"].extend(temp_data["target_text"])
-    
-    return pd.DataFrame(data)
+    filenames = []
+    for _, _, files in os.walk(input_directory):
+        filenames.extend(files)
+    return filenames
+
+
+def has_parallel_cree_english_data(filename: str, filenames: List[str]) -> bool:
+    """
+    Check if a file has both a Cree and English version.
+
+    Args:
+        filename (str): The filename to check.
+        filenames (List[str]): The list of filenames in the directory.
+
+    Returns:
+        bool: True if both versions exist, False otherwise.
+    """
+    if filename.endswith("_cr.txt"):
+        english_filename = filename.replace("_cr.txt", "_en.txt")
+        return english_filename in filenames
+    return False
+
+
+def get_cree_and_english_data_paths(root: str, filename: str) -> Tuple[str, str]:
+    """
+    Get the paths of the Cree and English files.
+
+    Args:
+        root (str): The root directory.
+        filename (str): The filename.
+
+    Returns:
+        Tuple[str, str]: The paths of the Cree and English files.
+    """
+    source_path = os.path.join(root, filename)
+    target_path = os.path.join(root, filename.replace("_cr.txt", "_en.txt"))
+    return source_path, target_path
+
+
+def read_lines_from_file(file_path: str) -> List[str]:
+    """
+    Read lines from a file and return them as a list of strings.
+
+    Args:
+        file_path (str): The path to the file.
+
+    Returns:
+        List[str]: A list of strings representing the lines in the file.
+    """
+    lines: List[str] = []
+    with open(file_path, "r", encoding="utf-8") as file:
+        lines.extend(line.strip() for line in file)
+    return lines
+
 
 def load_parallel_text_data(
     source_directory: str,
     target_directory: str,
-):
-    """Load parallel text data from two UTF-8 encoded text files.
+) -> pd.DataFrame:
+    """
+    Load parallel text data from the source and target paths.
 
     Args:
-        source_directory (str): path to source text file
-        target_directory (str): path to target text file
+        source_path (str): The path to the source text file.
+        target_path (str): The path to the target text file.
 
     Returns:
-        _type_: _description_
+        pd.DataFrame: The loaded parallel text data.
     """
-    data = {"source_text": [], "target_text": []}
-    with open(source_directory, "r", encoding="utf-8") as source_file, open(
-        target_directory, "r", encoding="utf-8"
-    ) as target_file:
-        for source_line, target_line in zip(source_file, target_file):
-            source_line = source_line.strip()
-            target_line = target_line.strip()
+    source_lines = read_lines_from_file(source_directory)
+    target_lines = read_lines_from_file(target_directory)
+    return pd.DataFrame({"source_text": source_lines, "target_text": target_lines})
 
-            if source_line and target_line:
-                data["source_text"].append(source_line)
-                data["target_text"].append(target_line)
-    return data
 
 def serialize_gold_standards(
-    input_path: str = "/data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard",
-    output_path: str = "/Users/cambish/indigenous-mt/data/serialized/gold_standard.parquet",
+    gs_dir: str, output_path: str, mode: GoldStandardMode = GoldStandardMode.CONSENSUS
 ):
     """
-    Serializes the gold standards to a parquet file. Does not run if the file already exists.
+    Loads the gold standard data for a specified mode and file prefix.
 
     Args:
-        path (str, optional): Filepath to save the serialized gold standards. Defaults to '/data/serialized/gold_standard.parquet'.
+        gs_dir (str): The directory containing the gold standard files.
+        mode (GoldStandardMode): Specifies which gold standard files to load.
+
+    Returns:
+        pd.DataFrame: The loaded gold standard data.
     """
-    if not os.path.exists(output_path):
-        print("Serializing gold standard")
-        gold_standard_df = load_gold_standards(input_path)
-        gold_standard_df.to_parquet(output_path)
+    print("Loading gold standard")
+    gold_standard_df = load_gold_standards(gs_dir, mode)
+    gold_standard_df.to_parquet(output_path)
 
 
 def serialize_parallel_corpus(
@@ -119,46 +178,44 @@ def serialize_parallel_corpus(
     Args:
         path (str, optional): Filepath to save the serialized parallel corpus. Defaults to '/data/serialized/syllabic_parallel_corpus.parquet'.
     """
-    if not os.path.exists(output_path):
-        print("Serializing parallel corpus")
-        parallel_corpus_df = load_parallel_corpus(input_path)
-        parallel_corpus_df.to_parquet(output_path)
+    print("Serializing parallel corpus")
+    parallel_corpus_df = load_parallel_corpus(input_path)
+    parallel_corpus_df.to_parquet(output_path)
 
 
-def load_gold_standards(gs_dir: str, mode: str = "consensus"):
+def load_gold_standards(
+    gs_dir: str, mode: GoldStandardMode = GoldStandardMode.CONSENSUS
+):
     """
     Loads the gold standard data for a specified mode and file prefix.
 
     Args:
-        mode (str): Specifies which gold standard files to load.
-        file_prefix (str): filepath to gold standard directory (
+        mode (GoldStandardMode): Specifies which gold standard files to load.
+        gs_dir (str): filepath to gold standard directory (
             i.e. data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/)
     """
-    if mode == "consensus":
-        gs_1_path = os.path.join(gs_dir, "annotator1-consensus")
-        gs_2_path = os.path.join(gs_dir, "annotator2-consensus")
-        print("loading consensus gold standard")
-    else:
-        gs_1_path = os.path.join(gs_dir, "annotator1")
-        gs_2_path = os.path.join(gs_dir, "annotator2")
-        print("loading individually annotated gold standard")
+    if mode == GoldStandardMode.CONSENSUS:
+        return load_consensus_gold_standards(gs_dir)
+    # else if mode == GoldStandardMode.INDIVIDUAL:
+    return load_individual_gold_standards(gs_dir)
 
-    # Get unique file prefixes from gs_1_path
-    gs_1_files = os.listdir(gs_1_path)
-    gs_1_prefixes = {
-        os.path.join(gs_1_path, filename.split(".")[0]) for filename in gs_1_files
-    }
 
-    # Get unique file prefixes from gs_2_path
-    gs_2_files = os.listdir(gs_2_path)
-    gs_2_prefixes = {
-        os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
-    }
+def load_consensus_gold_standards(gs_dir: str):
+    """
+    Load consensus gold standards from the given directory.
 
-    # Combine the prefixes from both paths
-    file_prefixes = gs_1_prefixes.union(gs_2_prefixes)
+    Args:
+        gs_dir (str): The directory path where the gold standards are located.
 
-    # create dataframe to store all gold standard data
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the concatenated gold standards.
+    """
+    gs_1_path = os.path.join(gs_dir, "annotator1-consensus")
+    gs_2_path = os.path.join(gs_dir, "annotator2-consensus")
+    print("loading consensus gold standard")
+
+    file_prefixes = get_file_prefixes(gs_1_path, gs_2_path)
+
     gs_dfs = []
 
     for file_prefix in file_prefixes:
@@ -166,6 +223,55 @@ def load_gold_standards(gs_dir: str, mode: str = "consensus"):
         gs_dfs.append(df)
 
     return pd.concat(gs_dfs, ignore_index=True)
+
+
+def load_individual_gold_standards(gs_dir: str):
+    """
+    Load individually annotated gold standards from the given directory.
+
+    Args:
+        gs_dir (str): The directory path where the gold standards are located.
+
+    Returns:
+        pd.DataFrame: A concatenated DataFrame of the gold standards.
+    """
+    gs_1_path = os.path.join(gs_dir, "annotator1")
+    gs_2_path = os.path.join(gs_dir, "annotator2")
+    print("loading individually annotated gold standard")
+
+    file_prefixes = get_file_prefixes(gs_1_path, gs_2_path)
+
+    gs_dfs = []
+
+    for file_prefix in file_prefixes:
+        df = extract_and_align_gold_standard(file_prefix)
+        gs_dfs.append(df)
+
+    return pd.concat(gs_dfs, ignore_index=True)
+
+
+def get_file_prefixes(gs_1_path: str, gs_2_path: str) -> Set[str]:
+    """
+    Get unique file prefixes from the gold standard paths.
+
+    Args:
+        gs_1_path (str): The path to the first gold standard directory.
+        gs_2_path (str): The path to the second gold standard directory.
+
+    Returns:
+        Set[str]: A set of unique file prefixes.
+    """
+    gs_1_files = os.listdir(gs_1_path)
+    gs_1_prefixes = {
+        os.path.join(gs_1_path, filename.split(".")[0]) for filename in gs_1_files
+    }
+
+    gs_2_files = os.listdir(gs_2_path)
+    gs_2_prefixes = {
+        os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
+    }
+
+    return gs_1_prefixes.union(gs_2_prefixes)
 
 
 def extract_and_align_gold_standard(file_prefix: str):
@@ -177,7 +283,7 @@ def extract_and_align_gold_standard(file_prefix: str):
     """
 
     # Define filepaths
-    # metadata_file = f"{file_prefix}.en.iu.conf"
+    # metadata_file = f"{file_prefix}.en.iu.conf" # not needed
     alignment_file = f"{file_prefix}.en.iu.xml"
     english_file = f"{file_prefix}.en.xml"
     inuktitut_file = f"{file_prefix}.iu.xml"
@@ -279,8 +385,8 @@ def eval_results(res_df: pd.DataFrame):
     """
     bleu_scores = []
     for _, row in res_df.iterrows():
-        reference = row["tgt_txt"].split()
-        prediction = row["trans_txt"].split()
+        reference = row["target_text"].split()
+        prediction = row["translated_text"].split()
 
         bleu = sentence_bleu([reference], prediction)
         bleu_scores.append(bleu)
@@ -344,7 +450,7 @@ def chat_completion_request_api(
         return e
 
 
-def n_shot_examples(gold_std, n_shots):
+def n_shot_examples(gold_standard, n_shots):
     """
     Selects a random subset of examples from the gold standard.
 
@@ -356,17 +462,17 @@ def n_shot_examples(gold_std, n_shots):
         str: A string containing the examples for few-shot learning.
     """
     # Select a random subset of examples from the gold standard
-    gs_subset = gold_std.sample(n=n_shots, replace=False)
+    gold_standard_subset = gold_standard.sample(n=n_shots, replace=False)
 
     # Empty string to store examples for few-shot learning
     examples = ""
 
     # Parse gold standard dataframe to get examples
-    for _, row in gs_subset.iterrows():
-        src_example = row["src_lang"]
-        tgt_example = row["tgt_lang"]
+    for _, row in gold_standard_subset.iterrows():
+        source_example = row["source_text"]
+        target_example = row["target_text"]
 
-        examples += f"Text: {src_example} | Translation: {tgt_example} ###\n"
+        examples += f"Text: {source_example} | Translation: {target_example} ###\n"
 
     return examples
 
@@ -390,7 +496,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
     # Select a random subset of examples from the gold standard and PLL corpus
     pc_subset = pll_corpus.sample(n=n_samples, replace=False)
 
-    cols = ["src_txt", "tgt_txt", "rom_txt", "trans_txt"]
+    cols = ["source_text", "target_text", "romanized_text", "translated_text"]
     results = []
 
     examples = n_shot_examples(gold_std, n_shots)
@@ -440,10 +546,10 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
 
                 results.append(
                     {
-                        "src_txt": src_txt,
-                        "tgt_txt": tgt_txt,
-                        "rom_txt": rom_txt,
-                        "trans_txt": trans_txt,
+                        "source_text": src_txt,
+                        "target_text": tgt_txt,
+                        "romanized_text": rom_txt,
+                        "translated_text": trans_txt,
                     }
                 )
 

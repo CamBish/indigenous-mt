@@ -8,8 +8,13 @@ import openai
 import pyarrow.parquet as pq
 from IPython.display import display
 
-from utils import (check_environment_variables, eval_results, n_shot_prompting,
-                   serialize_gold_standards, serialize_parallel_corpus)
+from utils import (
+    check_environment_variables,
+    eval_results,
+    n_shot_prompting,
+    serialize_gold_standards,
+    serialize_parallel_corpus,
+)
 
 # How many samples to test
 N_SAMPLES = 1000
@@ -28,7 +33,6 @@ INUKTITUT_ROMAN_PATH = os.path.join(
     project_dir, "data", "preprocessed", "inuktitut-romanized", "tc", "test"
 )
 
-CREE_
 
 GOLD_STANDARD_PATH = os.path.join(
     project_dir,
