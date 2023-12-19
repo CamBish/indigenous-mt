@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 from IPython.display import display
 
 from utils import (
+    LanguageMode,
     check_environment_variables,
     eval_results,
     n_shot_prompting,
@@ -45,8 +46,14 @@ GOLD_STANDARD_PATH = os.path.join(
 SERIALIZED_INUKTITUT_SYLLABIC_PATH = os.path.join(
     project_dir, "data", "serialized", "syllabic_parallel_corpus.parquet"
 )
+SERIALIZED_INUKTITUT_ROMAN_PATH = os.path.join(
+    project_dir, "data", "serialized", "roman_parallel_corpus.parquet"
+)
 SERIALIZED_GOLD_STANDARD_PATH = os.path.join(
     project_dir, "data", "serialized", "gold_standard.parquet"
+)
+SERIALIZED_CREE_PATH = os.path.join(
+    project_dir, "data", "serialized", "cree_corpus.parquet"
 )
 
 # Check if required environment variables are set
@@ -76,11 +83,19 @@ serialize_gold_standards(
 
 # if parallel corpus has not been serialized, do so using parquet
 serialize_parallel_corpus(
-    input_path=INUKTITUT_SYLLABIC_PATH, output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH
+    input_path=INUKTITUT_SYLLABIC_PATH,
+    output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH,
+    mode=LanguageMode.INUKTITUT,
 )
 serialize_parallel_corpus(
     input_path=INUKTITUT_ROMAN_PATH,
-    output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH,
+    output_path=SERIALIZED_INUKTITUT_ROMAN_PATH,
+    mode=LanguageMode.INUKTITUT,
+)
+serialize_parallel_corpus(
+    input_path=SERIALIZED_CREE_PATH,
+    output_path=SERIALIZED_CREE_PATH,
+    mode=LanguageMode.CREE,
 )
 
 # Load serialized data

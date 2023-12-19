@@ -1,7 +1,7 @@
 import os
 import re
 from enum import Enum
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 import pandas as pd
 
@@ -23,6 +23,11 @@ load_dotenv(dotenv_path)
 class GoldStandardMode(Enum):
     CONSENSUS = "consensus"
     INDIVIDUAL = "individual"
+
+
+class LanguageMode(Enum):
+    INUKTITUT = "inuktitut"
+    CREE = "cree"
 
 
 def check_environment_variables():
@@ -115,26 +120,10 @@ def get_cree_and_english_data_paths(root: str, filename: str) -> Tuple[str, str]
     return source_path, target_path
 
 
-def read_lines_from_file(file_path: str) -> List[str]:
-    """
-    Read lines from a file and return them as a list of strings.
-
-    Args:
-        file_path (str): The path to the file.
-
-    Returns:
-        List[str]: A list of strings representing the lines in the file.
-    """
-    lines: List[str] = []
-    with open(file_path, "r", encoding="utf-8") as file:
-        lines.extend(line.strip() for line in file)
-    return lines
-
-
 def load_parallel_text_data(
     source_directory: str,
     target_directory: str,
-) -> pd.DataFrame:
+) -> Dict[str, List[str]]:
     """
     Load parallel text data from the source and target paths.
 
@@ -145,9 +134,18 @@ def load_parallel_text_data(
     Returns:
         pd.DataFrame: The loaded parallel text data.
     """
-    source_lines = read_lines_from_file(source_directory)
-    target_lines = read_lines_from_file(target_directory)
-    return pd.DataFrame({"source_text": source_lines, "target_text": target_lines})
+    temp_data: Dict[str, List[str]] = {"source_text": [], "target_text": []}
+    with open(source_directory, "r", encoding="utf-8") as source_file, open(
+        target_directory, "r", encoding="utf-8"
+    ) as target_file:
+        for source_line, target_line in zip(source_file, target_file):
+            source_line = source_line.strip()
+            target_line = target_line.strip()
+            if source_line and target_line:
+                temp_data["source_text"].append(source_line)
+                temp_data["target_text"].append(target_line)
+
+    return temp_data
 
 
 def serialize_gold_standards(
@@ -171,8 +169,9 @@ def serialize_gold_standards(
 
 
 def serialize_parallel_corpus(
-    input_path: str = "/data/preprocessed/inuktitut-syllabic/tc/test",
-    output_path: str = "/Users/cambish/indigenous-mt/data/serialized/syllabic_parallel_corpus.parquet",
+    input_path: str,
+    output_path: str,
+    mode: LanguageMode = LanguageMode.INUKTITUT,
 ):
     """
     Serializes the parallel corpus to a parquet file. Does not run if the file already exists.
@@ -180,9 +179,16 @@ def serialize_parallel_corpus(
     Args:
         path (str, optional): Filepath to save the serialized parallel corpus. Defaults to '/data/serialized/syllabic_parallel_corpus.parquet'.
     """
-    print("Serializing parallel corpus")
-    parallel_corpus_df = load_parallel_corpus(input_path)
-    parallel_corpus_df.to_parquet(output_path)
+    if mode == LanguageMode.INUKTITUT:
+        print("Serializing Inuktitut parallel corpus")
+        parallel_corpus_df = load_inuktitut_parallel_corpus(input_path)
+        parallel_corpus_df.to_parquet(output_path)
+        return
+    if mode == LanguageMode.CREE:
+        print("Serializing Cree parallel corpus")
+        parallel_corpus_df = load_cree_parallel_data(input_path)
+        parallel_corpus_df.to_parquet(output_path)
+        return
 
 
 def load_gold_standards(
@@ -326,8 +332,8 @@ def link_gold_standard(links, inuktitut_root, english_root):
     """
     # Create a dictionary to store the extracted data
     data = {
-        "src_lang": [],
-        "tgt_lang": [],
+        "source_text": [],
+        "target_text": [],
     }
 
     # Iterate through the links in the alignment file
@@ -351,13 +357,13 @@ def link_gold_standard(links, inuktitut_root, english_root):
         tgt_text = " ".join(tgt_phrases)
 
         # Add the extracted data to the data dictionary
-        data["src_lang"].append(src_text)
-        data["tgt_lang"].append(tgt_text)
+        data["source_text"].append(src_text)
+        data["target_text"].append(tgt_text)
 
     return pd.DataFrame(data)
 
 
-def load_parallel_corpus(path: str):
+def load_inuktitut_parallel_corpus(path: str):
     """Loads data from parallel corpus files specified by
 
     Args:
@@ -366,14 +372,14 @@ def load_parallel_corpus(path: str):
     Returns:
         pd.DataFrame: Dataframe with data from parallel corpus
     """
-    data: dict = {"inuktitut_text": [], "english_text": []}
-    source_filename = f"{path}.en"
-    target_filename = f"{path}.iu"
+    data: dict = {"source_text": [], "target_text": []}
+    source_filename = f"{path}.iu"
+    target_filename = f"{path}.en"
 
     # load data from source and target files using load_parallel_text_data
     temp_data = load_parallel_text_data(source_filename, target_filename)
-    data["inuktitut_text"].extend(temp_data["source_text"])
-    data["english_text"].extend(temp_data["target_text"])
+    data["source_text"].extend(temp_data["source_text"])
+    data["target_text"].extend(temp_data["target_text"])
     return pd.DataFrame(data)
 
 
@@ -452,7 +458,7 @@ def chat_completion_request_api(
         return e
 
 
-def n_shot_examples(gold_standard, n_shots):
+def generate_n_shot_examples(gold_standard, n_shots):
     """
     Selects a random subset of examples from the gold standard.
 
@@ -501,7 +507,7 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
     cols = ["source_text", "target_text", "romanized_text", "translated_text"]
     results = []
 
-    examples = n_shot_examples(gold_std, n_shots)
+    examples = generate_n_shot_examples(gold_std, n_shots)
 
     max_attempts = 5
     # Iterate over the dataframe subset
