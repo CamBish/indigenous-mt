@@ -151,7 +151,9 @@ def load_parallel_text_data(
 
 
 def serialize_gold_standards(
-    gs_dir: str, output_path: str, mode: GoldStandardMode = GoldStandardMode.CONSENSUS
+    input_path: str,
+    output_path: str,
+    mode: GoldStandardMode = GoldStandardMode.CONSENSUS,
 ):
     """
     Loads the gold standard data for a specified mode and file prefix.
@@ -163,8 +165,8 @@ def serialize_gold_standards(
     Returns:
         pd.DataFrame: The loaded gold standard data.
     """
-    print("Loading gold standard")
-    gold_standard_df = load_gold_standards(gs_dir, mode)
+    print("Loading Inuktitut gold standard")
+    gold_standard_df = load_gold_standards(input_path, mode)
     gold_standard_df.to_parquet(output_path)
 
 
