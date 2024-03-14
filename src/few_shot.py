@@ -26,7 +26,7 @@ project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
-# Load constants from environment variabless
+# Load constants from environment variables - this is for preprocessed data
 INUKTITUT_SYLLABIC_PATH = os.path.join(
     project_dir, "data", "preprocessed", "inuktitut-syllabic", "tc", "test"
 )
@@ -34,6 +34,23 @@ INUKTITUT_ROMAN_PATH = os.path.join(
     project_dir, "data", "preprocessed", "inuktitut-romanized", "tc", "test"
 )
 
+# Load constants from environment variables - this is for raw data
+RAW_INUKTITUT_SYLLABIC_PATH = os.path.join(
+    project_dir,
+    "data",
+    "external",
+    "Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0",
+    "split",
+    "test",
+)
+RAW_INUKTITUT_ROMAN_PATH = os.path.join(
+    project_dir,
+    "data",
+    "external",
+    "Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0",
+    "split",
+    "test",
+)
 
 GOLD_STANDARD_PATH = os.path.join(
     project_dir,
@@ -103,9 +120,6 @@ df = pq.read_table(SERIALIZED_INUKTITUT_SYLLABIC_PATH).to_pandas()
 gold_standard_df = pq.read_table(SERIALIZED_GOLD_STANDARD_PATH).to_pandas()
 print("Serialized Data loaded")
 
-# Load all relevant data, such as gold standard and parallel corpus data
-# df = load_parallel_corpus(INUKTITUT_SYLLABIC_PATH)
-# gold_standard_df = load_gold_standards(GOLD_STANDARD_PATH)
 
 display(df)
 display(gold_standard_df)
