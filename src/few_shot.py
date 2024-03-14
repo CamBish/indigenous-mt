@@ -26,12 +26,22 @@ project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
-# Load constants from environment variables - this is for preprocessed data
-INUKTITUT_SYLLABIC_PATH = os.path.join(
-    project_dir, "data", "preprocessed", "inuktitut-syllabic", "tc", "test"
+# Load constants from environment variabless
+TEST_INUKTITUT_SYLLABIC_PATH = os.path.join(
+    project_dir,
+    "data",
+    "external",
+    "Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0",
+    "split",
+    "test",
 )
-INUKTITUT_ROMAN_PATH = os.path.join(
-    project_dir, "data", "preprocessed", "inuktitut-romanized", "tc", "test"
+TEST_INUKTITUT_ROMAN_PATH = os.path.join(
+    project_dir,
+    "data",
+    "external",
+    "Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0",
+    "split",
+    "test",
 )
 
 # Load constants from environment variables - this is for raw data
@@ -60,11 +70,11 @@ GOLD_STANDARD_PATH = os.path.join(
     "gold-standard",
 )
 
-SERIALIZED_INUKTITUT_SYLLABIC_PATH = os.path.join(
-    project_dir, "data", "serialized", "syllabic_parallel_corpus.parquet"
+TEST_SERIALIZED_INUKTITUT_SYLLABIC_PATH = os.path.join(
+    project_dir, "data", "serialized", "test_syllabic_parallel_corpus.parquet"
 )
-SERIALIZED_INUKTITUT_ROMAN_PATH = os.path.join(
-    project_dir, "data", "serialized", "roman_parallel_corpus.parquet"
+TEST_SERIALIZED_INUKTITUT_ROMAN_PATH = os.path.join(
+    project_dir, "data", "serialized", "test_roman_parallel_corpus.parquet"
 )
 SERIALIZED_GOLD_STANDARD_PATH = os.path.join(
     project_dir, "data", "serialized", "gold_standard.parquet"
@@ -100,13 +110,13 @@ serialize_gold_standards(
 
 # if parallel corpus has not been serialized, do so using parquet
 serialize_parallel_corpus(
-    input_path=INUKTITUT_SYLLABIC_PATH,
-    output_path=SERIALIZED_INUKTITUT_SYLLABIC_PATH,
+    input_path=TEST_INUKTITUT_SYLLABIC_PATH,
+    output_path=TEST_SERIALIZED_INUKTITUT_SYLLABIC_PATH,
     mode=LanguageMode.INUKTITUT,
 )
 serialize_parallel_corpus(
-    input_path=INUKTITUT_ROMAN_PATH,
-    output_path=SERIALIZED_INUKTITUT_ROMAN_PATH,
+    input_path=TEST_INUKTITUT_ROMAN_PATH,
+    output_path=TEST_SERIALIZED_INUKTITUT_ROMAN_PATH,
     mode=LanguageMode.INUKTITUT,
 )
 serialize_parallel_corpus(
@@ -116,7 +126,7 @@ serialize_parallel_corpus(
 )
 
 # Load serialized data
-df = pq.read_table(SERIALIZED_INUKTITUT_SYLLABIC_PATH).to_pandas()
+df = pq.read_table(TEST_SERIALIZED_INUKTITUT_SYLLABIC_PATH).to_pandas()
 gold_standard_df = pq.read_table(SERIALIZED_GOLD_STANDARD_PATH).to_pandas()
 print("Serialized Data loaded")
 
@@ -125,7 +135,7 @@ display(df)
 display(gold_standard_df)
 # %%
 
-df_subset = df.sample(n=N_SAMPLES)
+df_subset = df.sample(n=N_SAMPLES, random_state=42)
 
 # System message to prime assisstant for translation
 sys_msg = f"""You are a machine translation system that operates in two steps.
