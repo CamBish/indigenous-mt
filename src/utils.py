@@ -57,6 +57,14 @@ def check_environment_variables():
 
 
 def load_cree_parallel_data(input_directory: str) -> pd.DataFrame:
+    """load Cree data from specified directory into a Dataframe
+
+    Args:
+        input_directory (str): string containing input path
+
+    Returns:
+        pd.DataFrame: Dataframe with contents from parallel data
+    """
     cree_text = []
     english_text = []
     filenames = get_filenames(input_directory)
@@ -278,7 +286,6 @@ def get_file_prefixes(gs_1_path: str, gs_2_path: str) -> Set[str]:
     gs_2_prefixes = {
         os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
     }
-
     return gs_1_prefixes.union(gs_2_prefixes)
 
 
@@ -408,11 +415,27 @@ def eval_results(res_df: pd.DataFrame):
     return res_df
 
 
+def chat_completion_ollama_api(
+    messages,
+    model,
+    options=None,
+):
+    api_base = "http://localhost:11434"
+    json_data = {"model": model, "messages": messages, "api_base": api_base}
+    if options is not None:
+        json_data["options"] = options
+
+    try:
+        return completion(**json_data)
+    except OpenAIError as e:
+        print("Unable to generate ChatCompletion response")
+        print(f"Exception: {e}")
+        return e
+
+
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
 def chat_completion_request_api(
     messages,
-    functions=None,
-    function_call=None,
     temperature=0,
     max_tokens=None,
     stop=None,
@@ -437,10 +460,6 @@ def chat_completion_request_api(
     """
     model = os.environ.get("MODEL", "gpt-3.5-turbo")
     json_data = {"model": model, "messages": messages}
-    if functions is not None:
-        json_data["functions"] = functions
-    if function_call is not None:
-        json_data["function_call"] = function_call
     if temperature is not None:
         json_data["temperature"] = temperature
     if max_tokens is not None:

@@ -84,17 +84,18 @@ SERIALIZED_CREE_PATH = os.path.join(
 )
 
 # Check if required environment variables are set
-try:
-    check_environment_variables()
-except KeyError:
-    print(
-        "Error: Required environment variables are not set"
-    )  # TODO include which variables are missing
-    sys.exit()
+# Not needed anymore since models are hosted locally
+# try:
+#     check_environment_variables()
+# except KeyError:
+#     print(
+#         "Error: Required environment variables are not set"
+#     )
+#     sys.exit()
 
 # Load constants from environment variables
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-MODEL = os.environ.get("MODEL")
+# openai.api_key = os.environ.get("OPENAI_API_KEY")
+# MODEL = os.environ.get("MODEL")
 SOURCE_LANGUAGE = os.environ.get("SOURCE_LANGUAGE")
 TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
 TEXT_DOMAIN = os.environ.get("TEXT_DOMAIN")
