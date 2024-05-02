@@ -7,7 +7,7 @@ from IPython import display
 from nltk.translate.bleu_score import sentence_bleu
 
 from utils import (
-    chat_completion_request_api,
+    chat_completion_openai_api,
     check_environment_variables,
     load_parallel_corpus,
 )
@@ -54,7 +54,7 @@ for _, row in subset.iterrows():
             "content": f"Please provide the {TGT} translation for the following sentences: {src_txt}",
         },
     ]
-    res = chat_completion_request_api(messages=message)
+    res = chat_completion_openai_api(messages=message)
 
     pred_txt = res["choices"][0]["message"]["content"]
 

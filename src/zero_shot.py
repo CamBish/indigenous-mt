@@ -1,3 +1,4 @@
+# %%
 import os
 import re
 import time
@@ -19,7 +20,7 @@ dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
 # constants
-MODEL = ""
+MODEL = "ollama_chat/llama3"
 N_SAMPLES = 1000
 
 TEST_INUKTITUT_SYLLABIC_PATH = os.path.join(
@@ -81,6 +82,9 @@ print("Serialized Data Loaded")
 
 display(df)
 
+
+# %%
+
 df_subset = df.sample(n=N_SAMPLES, random_state=42)
 
 print("Test Sample")
@@ -111,6 +115,7 @@ for _, row in df_subset.iterrows():
 
     pred_txt = res["choices"][0]["message"]["content"]
 
+    print(pred_txt)
     rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
     trans_match = re.search(r"Translation: (.+?)$", pred_txt)
 
@@ -138,3 +143,5 @@ rdf = eval_results(rdf)
 display(rdf)
 out_path = f"results/{MODEL}/{N_SAMPLES}-zero_shot.parquet"
 rdf.to_parquet(out_path)
+
+# %%

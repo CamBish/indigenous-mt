@@ -30,69 +30,156 @@ class LanguageMode(Enum):
     CREE = "cree"
 
 
-def check_environment_variables():
+# TODO label inputs and outputs
+def chat_completion_ollama_api(
+    messages,
+    model,
+    options=None,
+):
+    """Make a chat request to Ollama models"""
+    api_base = "http://localhost:11434"
+    json_data = {"model": model, "messages": messages, "api_base": api_base}
+    if options is not None:
+        json_data["options"] = options
+
+    try:
+        return completion(**json_data)
+    except OpenAIError as e:
+        print("Unable to generate ChatCompletion response")
+        print(f"Exception: {e}")
+        return e
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
+def chat_completion_openai_api(
+    messages,
+    temperature=0,
+    max_tokens=None,
+    stop=None,
+    n=None,
+    model=None,
+):
     """
-    Checks if all the required environment variables are set.
-    This function checks if the following environment variables are set:
-    - OPENAI_API_KEY: The API key for the OpenAI service.
-    - MODEL: The name of the model to be used.
-    - SOURCE_LANGUAGE: The source language for translation.
-    - TARGET_LANGUAGE: The target language for translation.
-    - N_SAMPLES: The number of samples to generate during translation.
-    - MAX_N_SHOTS: The maximum number of shots to take during translation.
-    - TEXT_DOMAIN: The domain of the text to be translated.
-    If any of these environment variables are not set, a KeyError is raised.
+    Wrapper function for creating chat completion request through OpenAI.
+
+    Args:
+        messages (list): A list of messages for the chat completion.
+        functions (str, optional): A string representing the functions to be used.
+        function_call (str, optional): A string representing the function call to be used.
+        temperature (float, optional): A float representing the temperature for generating text. Defaults to 0.
+        max_tokens (int, optional): An integer representing the maximum number of tokens. Defaults to None.
+        stop (str, optional): A string representing the stopping condition for generating text. Defaults to None.
+        n (int, optional): An integer representing the number of completions to generate. Defaults to None.
+        model (str, optional): A string representing the model to be used. Defaults to "MODEL".
+
+    Returns:
+        ChatCompletion: An instance of the ChatCompletion class.
+    """
+    model = os.environ.get("MODEL", "gpt-3.5-turbo")
+    json_data = {"model": model, "messages": messages}
+    if temperature is not None:
+        json_data["temperature"] = temperature
+    if max_tokens is not None:
+        json_data["max_tokens"] = max_tokens
+    if stop is not None:
+        json_data["stop"] = stop
+    if n is not None:
+        json_data["n"] = n
+
+    try:
+        return completion(**json_data)
+    except OpenAIError as e:
+        print("Unable to generate ChatCompletion response")
+        print(f"Exception: {e}")
+        return e
+
+
+def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
+    """
+    Perform n-shot prompting using a system message, gold standard, and parallel corpus.
+
+    Args:
+        sys_msg (str): The system message to include in the chat conversation.
+        gold_std (pandas.DataFrame): The gold standard dataframe.
+        pll_corpus (pandas.DataFrame): The parallel corpus dataframe.
+        n_shots (int): The number of examples to include from the gold standard.
+        n_samples (int): The number of examples to include from the PLL corpus.
+
+    Returns:
+        pandas.DataFrame: A dataframe containing the results of the n-shot prompting.
     """
 
-    if not all(
-        [
-            os.environ.get("OPENAI_API_KEY"),
-            os.environ.get("MODEL"),
-            os.environ.get("SOURCE_LANGUAGE"),
-            os.environ.get("TARGET_LANGUAGE"),
-            os.environ.get("TEXT_DOMAIN"),
+    TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
+    # Select a random subset of examples from the gold standard and PLL corpus
+    pc_subset = pll_corpus.sample(n=n_samples, replace=False)
+
+    cols = ["source_text", "target_text", "romanized_text", "translated_text"]
+    results = []
+
+    examples = generate_n_shot_examples(gold_std, n_shots)
+
+    max_attempts = 5
+    # Iterate over the dataframe subset
+    for _, row in pc_subset.iterrows():
+        src_txt = row["source_text"]
+        # Create the chat conversation messages
+        message = [
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": examples},
+            {
+                "role": "user",
+                "content": f"Provide the {TARGET_LANGUAGE} transliteration and translation for the following text: {src_txt} ###",
+            },
         ]
-    ):
-        raise KeyError("Error: Required environment variables are not set")
+        attempts = 0
 
+        tgt_txt = row["target_text"]
+        # Loop until the API call is successful or the maximum number of attempts is reached
+        while attempts < max_attempts:
+            try:
+                # TODO should be made into a function
+                res = chat_completion_openai_api(messages=message)
+                pred_txt = res["choices"][0]["message"]["content"]
+                if pred_txt is None or pred_txt == "":
+                    attempts += 1
+                    OpenAIError("Empty response. Trying again...")
 
-def load_cree_parallel_data(input_directory: str) -> pd.DataFrame:
-    """load Cree data from specified directory into a Dataframe
+                rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
+                trans_match = re.search(r"Translation: (.+?)$", pred_txt)
 
-    Args:
-        input_directory (str): string containing input path
+                if rom_match is None or trans_match is None:
+                    attempts += 1
+                    OpenAIError("Invalid output from LLM. Trying again...")
+                    continue
 
-    Returns:
-        pd.DataFrame: Dataframe with contents from parallel data
-    """
-    cree_text = []
-    english_text = []
-    filenames = get_filenames(input_directory)
-    for filename in filenames:
-        if has_parallel_cree_english_data(filename, filenames):
-            source_path, target_path = get_cree_and_english_data_paths(
-                input_directory, filename
-            )
-            temp_data = load_parallel_text_data(source_path, target_path)
-            cree_text.extend(temp_data["source_text"])
-            english_text.extend(temp_data["target_text"])
-    return pd.DataFrame({"cree_text": cree_text, "english_text": english_text})
+                rom_txt = rom_match[1].strip("[]")
+                trans_txt = trans_match[1].strip("[]")
 
+                src_txt = src_txt.strip("[]")
 
-def get_filenames(input_directory: str) -> List[str]:
-    """
-    Get a list of filenames in the specified input directory.
+                print("Romanized Text:", rom_txt)
+                print("Translated Text:", trans_txt)
+                print("Actual translation: ", tgt_txt)
 
-    Args:
-        input_directory (str): The path to the input directory.
+                results.append(
+                    {
+                        "source_text": src_txt,
+                        "target_text": tgt_txt,
+                        "romanized_text": rom_txt,
+                        "translated_text": trans_txt,
+                    }
+                )
 
-    Returns:
-        List[str]: A list of filenames in the input directory.
-    """
-    filenames = []
-    for _, _, files in os.walk(input_directory):
-        filenames.extend(files)
-    return filenames
+                break  # Exit the loop if the API call is successful
+
+            except OpenAIError as err:
+                print(f"Exception: {err}")
+                attempts += 1
+
+        if attempts == max_attempts:
+            print("Max number of attempts reached. Skipping this example.")
+
+    return pd.DataFrame(results, columns=cols)
 
 
 def has_parallel_cree_english_data(filename: str, filenames: List[str]) -> bool:
@@ -112,20 +199,43 @@ def has_parallel_cree_english_data(filename: str, filenames: List[str]) -> bool:
     return False
 
 
-def get_cree_and_english_data_paths(root: str, filename: str) -> Tuple[str, str]:
+def get_filenames(input_directory: str) -> List[str]:
     """
-    Get the paths of the Cree and English files.
+    Get a list of filenames in the specified input directory.
 
     Args:
-        root (str): The root directory.
-        filename (str): The filename.
+        input_directory (str): The path to the input directory.
 
     Returns:
-        Tuple[str, str]: The paths of the Cree and English files.
+        List[str]: A list of filenames in the input directory.
     """
-    source_path = os.path.join(root, filename)
-    target_path = os.path.join(root, filename.replace("_cr.txt", "_en.txt"))
-    return source_path, target_path
+    filenames = []
+    for _, _, files in os.walk(input_directory):
+        filenames.extend(files)
+    return filenames
+
+
+def get_file_prefixes(gs_1_path: str, gs_2_path: str) -> Set[str]:
+    """
+    Get unique file prefixes from the gold standard paths.
+
+    Args:
+        gs_1_path (str): The path to the first gold standard directory.
+        gs_2_path (str): The path to the second gold standard directory.
+
+    Returns:
+        Set[str]: A set of unique file prefixes.
+    """
+    gs_1_files = os.listdir(gs_1_path)
+    gs_1_prefixes = {
+        os.path.join(gs_1_path, filename.split(".")[0]) for filename in gs_1_files
+    }
+
+    gs_2_files = os.listdir(gs_2_path)
+    gs_2_prefixes = {
+        os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
+    }
+    return gs_1_prefixes.union(gs_2_prefixes)
 
 
 def load_parallel_text_data(
@@ -154,6 +264,45 @@ def load_parallel_text_data(
                 temp_data["target_text"].append(target_line)
 
     return temp_data
+
+
+def load_cree_parallel_data(input_directory: str) -> pd.DataFrame:
+    """load Cree data from specified directory into a Dataframe
+
+    Args:
+        input_directory (str): string containing input path
+
+    Returns:
+        pd.DataFrame: Dataframe with contents from parallel data
+    """
+    cree_text = []
+    english_text = []
+    filenames = get_filenames(input_directory)
+    for filename in filenames:
+        if has_parallel_cree_english_data(filename, filenames):
+            source_path, target_path = get_cree_and_english_data_paths(
+                input_directory, filename
+            )
+            temp_data = load_parallel_text_data(source_path, target_path)
+            cree_text.extend(temp_data["source_text"])
+            english_text.extend(temp_data["target_text"])
+    return pd.DataFrame({"cree_text": cree_text, "english_text": english_text})
+
+
+def get_cree_and_english_data_paths(root: str, filename: str) -> Tuple[str, str]:
+    """
+    Get the paths of the Cree and English files.
+
+    Args:
+        root (str): The root directory.
+        filename (str): The filename.
+
+    Returns:
+        Tuple[str, str]: The paths of the Cree and English files.
+    """
+    source_path = os.path.join(root, filename)
+    target_path = os.path.join(root, filename.replace("_cr.txt", "_en.txt"))
+    return source_path, target_path
 
 
 def serialize_gold_standards(
@@ -199,21 +348,40 @@ def serialize_parallel_corpus(
         return
 
 
-def load_gold_standards(
-    gs_dir: str, mode: GoldStandardMode = GoldStandardMode.CONSENSUS
-):
+def extract_and_align_gold_standard(file_prefix: str):
     """
-    Loads the gold standard data for a specified mode and file prefix.
+    Extracts and aligns the text stored within the gold standards using a specified file prefix.
 
     Args:
-        mode (GoldStandardMode): Specifies which gold standard files to load.
-        gs_dir (str): filepath to gold standard directory (
-            i.e. data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/)
+        file_prefix (str): The relative file path to the gold standard, without any of the suffixes (e.g., IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401)
     """
-    if mode == GoldStandardMode.CONSENSUS:
-        return load_consensus_gold_standards(gs_dir)
-    # else if mode == GoldStandardMode.INDIVIDUAL:
-    return load_individual_gold_standards(gs_dir)
+
+    # Define filepaths
+    # metadata_file = f"{file_prefix}.en.iu.conf" # not needed
+    alignment_file = f"{file_prefix}.en.iu.xml"
+    english_file = f"{file_prefix}.en.xml"
+    inuktitut_file = f"{file_prefix}.iu.xml"
+
+    # Parse the alignment file to get alignment information
+    alignment_tree = ET.parse(alignment_file)
+    alignment_root = alignment_tree.getroot()
+
+    # Parse the English and Inuktitut files
+    english_tree = ET.parse(english_file)
+    inuktitut_tree = ET.parse(inuktitut_file)
+    english_root = english_tree.getroot()
+    inuktitut_root = inuktitut_tree.getroot()
+
+    # Remove any 0-Many or Many-0 links
+    zeroes = re.compile(r"0")  # regex to find zeroes in the alignment file
+    links = [
+        link
+        for link in alignment_root.iter("link")
+        if not zeroes.search(link.get("type"))
+    ]
+
+    # Return the linked gold standard as a DataFrame
+    return link_gold_standard(links, inuktitut_root, english_root)
 
 
 def load_consensus_gold_standards(gs_dir: str):
@@ -266,63 +434,21 @@ def load_individual_gold_standards(gs_dir: str):
     return pd.concat(gs_dfs, ignore_index=True)
 
 
-def get_file_prefixes(gs_1_path: str, gs_2_path: str) -> Set[str]:
+def load_gold_standards(
+    gs_dir: str, mode: GoldStandardMode = GoldStandardMode.CONSENSUS
+):
     """
-    Get unique file prefixes from the gold standard paths.
+    Loads the gold standard data for a specified mode and file prefix.
 
     Args:
-        gs_1_path (str): The path to the first gold standard directory.
-        gs_2_path (str): The path to the second gold standard directory.
-
-    Returns:
-        Set[str]: A set of unique file prefixes.
+        mode (GoldStandardMode): Specifies which gold standard files to load.
+        gs_dir (str): filepath to gold standard directory (
+            i.e. data/external/Nunavut-Hansard-Inuktitut-English-Parallel-Corpus-3.0/gold-standard/)
     """
-    gs_1_files = os.listdir(gs_1_path)
-    gs_1_prefixes = {
-        os.path.join(gs_1_path, filename.split(".")[0]) for filename in gs_1_files
-    }
-
-    gs_2_files = os.listdir(gs_2_path)
-    gs_2_prefixes = {
-        os.path.join(gs_2_path, filename.split(".")[0]) for filename in gs_2_files
-    }
-    return gs_1_prefixes.union(gs_2_prefixes)
-
-
-def extract_and_align_gold_standard(file_prefix: str):
-    """
-    Extracts and aligns the text stored within the gold standards using a specified file prefix.
-
-    Args:
-        file_prefix (str): The relative file path to the gold standard, without any of the suffixes (e.g., IU-EN-Parallel-Corpus/gold-standard/annotator1-consensus/Hansard_19990401)
-    """
-
-    # Define filepaths
-    # metadata_file = f"{file_prefix}.en.iu.conf" # not needed
-    alignment_file = f"{file_prefix}.en.iu.xml"
-    english_file = f"{file_prefix}.en.xml"
-    inuktitut_file = f"{file_prefix}.iu.xml"
-
-    # Parse the alignment file to get alignment information
-    alignment_tree = ET.parse(alignment_file)
-    alignment_root = alignment_tree.getroot()
-
-    # Parse the English and Inuktitut files
-    english_tree = ET.parse(english_file)
-    inuktitut_tree = ET.parse(inuktitut_file)
-    english_root = english_tree.getroot()
-    inuktitut_root = inuktitut_tree.getroot()
-
-    # Remove any 0-Many or Many-0 links
-    zeroes = re.compile(r"0")  # regex to find zeroes in the alignment file
-    links = [
-        link
-        for link in alignment_root.iter("link")
-        if not zeroes.search(link.get("type"))
-    ]
-
-    # Return the linked gold standard as a DataFrame
-    return link_gold_standard(links, inuktitut_root, english_root)
+    if mode == GoldStandardMode.CONSENSUS:
+        return load_consensus_gold_standards(gs_dir)
+    # else if mode == GoldStandardMode.INDIVIDUAL:
+    return load_individual_gold_standards(gs_dir)
 
 
 def link_gold_standard(links, inuktitut_root, english_root):
@@ -415,68 +541,6 @@ def eval_results(res_df: pd.DataFrame):
     return res_df
 
 
-def chat_completion_ollama_api(
-    messages,
-    model,
-    options=None,
-):
-    api_base = "http://localhost:11434"
-    json_data = {"model": model, "messages": messages, "api_base": api_base}
-    if options is not None:
-        json_data["options"] = options
-
-    try:
-        return completion(**json_data)
-    except OpenAIError as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
-
-
-@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
-def chat_completion_request_api(
-    messages,
-    temperature=0,
-    max_tokens=None,
-    stop=None,
-    n=None,
-    model=None,
-):
-    """
-    Wrapper function for creating chat completion request through OpenAI.
-
-    Args:
-        messages (list): A list of messages for the chat completion.
-        functions (str, optional): A string representing the functions to be used.
-        function_call (str, optional): A string representing the function call to be used.
-        temperature (float, optional): A float representing the temperature for generating text. Defaults to 0.
-        max_tokens (int, optional): An integer representing the maximum number of tokens. Defaults to None.
-        stop (str, optional): A string representing the stopping condition for generating text. Defaults to None.
-        n (int, optional): An integer representing the number of completions to generate. Defaults to None.
-        model (str, optional): A string representing the model to be used. Defaults to "MODEL".
-
-    Returns:
-        ChatCompletion: An instance of the ChatCompletion class.
-    """
-    model = os.environ.get("MODEL", "gpt-3.5-turbo")
-    json_data = {"model": model, "messages": messages}
-    if temperature is not None:
-        json_data["temperature"] = temperature
-    if max_tokens is not None:
-        json_data["max_tokens"] = max_tokens
-    if stop is not None:
-        json_data["stop"] = stop
-    if n is not None:
-        json_data["n"] = n
-
-    try:
-        return completion(**json_data)
-    except OpenAIError as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
-
-
 def generate_n_shot_examples(gold_standard, n_shots):
     """
     Selects a random subset of examples from the gold standard.
@@ -504,89 +568,27 @@ def generate_n_shot_examples(gold_standard, n_shots):
     return examples
 
 
-def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
-    """
-    Perform n-shot prompting using a system message, gold standard, and parallel corpus.
+# def check_environment_variables():
+#     """
+#     Checks if all the required environment variables are set.
+#     This function checks if the following environment variables are set:
+#     - OPENAI_API_KEY: The API key for the OpenAI service.
+#     - MODEL: The name of the model to be used.
+#     - SOURCE_LANGUAGE: The source language for translation.
+#     - TARGET_LANGUAGE: The target language for translation.
+#     - N_SAMPLES: The number of samples to generate during translation.
+#     - MAX_N_SHOTS: The maximum number of shots to take during translation.
+#     - TEXT_DOMAIN: The domain of the text to be translated.
+#     If any of these environment variables are not set, a KeyError is raised.
+#     """
 
-    Args:
-        sys_msg (str): The system message to include in the chat conversation.
-        gold_std (pandas.DataFrame): The gold standard dataframe.
-        pll_corpus (pandas.DataFrame): The parallel corpus dataframe.
-        n_shots (int): The number of examples to include from the gold standard.
-        n_samples (int): The number of examples to include from the PLL corpus.
-
-    Returns:
-        pandas.DataFrame: A dataframe containing the results of the n-shot prompting.
-    """
-
-    TARGET_LANGUAGE = os.environ.get("TARGET_LANGUAGE")
-    # Select a random subset of examples from the gold standard and PLL corpus
-    pc_subset = pll_corpus.sample(n=n_samples, replace=False)
-
-    cols = ["source_text", "target_text", "romanized_text", "translated_text"]
-    results = []
-
-    examples = generate_n_shot_examples(gold_std, n_shots)
-
-    max_attempts = 5
-    # Iterate over the dataframe subset
-    for _, row in pc_subset.iterrows():
-        src_txt = row["source_text"]
-        # Create the chat conversation messages
-        message = [
-            {"role": "system", "content": sys_msg},
-            {"role": "user", "content": examples},
-            {
-                "role": "user",
-                "content": f"Provide the {TARGET_LANGUAGE} transliteration and translation for the following text: {src_txt} ###",
-            },
-        ]
-        attempts = 0
-
-        tgt_txt = row["target_text"]
-        # Loop until the API call is successful or the maximum number of attempts is reached
-        while attempts < max_attempts:
-            try:
-                # TODO should be made into a function
-                res = chat_completion_request_api(messages=message)
-                pred_txt = res["choices"][0]["message"]["content"]
-                if pred_txt is None or pred_txt == "":
-                    attempts += 1
-                    OpenAIError("Empty response. Trying again...")
-
-                rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
-                trans_match = re.search(r"Translation: (.+?)$", pred_txt)
-
-                if rom_match is None or trans_match is None:
-                    attempts += 1
-                    OpenAIError("Invalid output from LLM. Trying again...")
-                    continue
-
-                rom_txt = rom_match[1].strip("[]")
-                trans_txt = trans_match[1].strip("[]")
-
-                src_txt = src_txt.strip("[]")
-
-                print("Romanized Text:", rom_txt)
-                print("Translated Text:", trans_txt)
-                print("Actual translation: ", tgt_txt)
-
-                results.append(
-                    {
-                        "source_text": src_txt,
-                        "target_text": tgt_txt,
-                        "romanized_text": rom_txt,
-                        "translated_text": trans_txt,
-                    }
-                )
-
-                break  # Exit the loop if the API call is successful
-
-            except OpenAIError as err:
-                print(f"Exception: {err}")
-                attempts += 1
-
-        if attempts == max_attempts:
-            print("Max number of attempts reached. Skipping this example.")
-
-    return pd.DataFrame(results, columns=cols)
+#     if not all(
+#         [
+#             os.environ.get("OPENAI_API_KEY"),
+#             os.environ.get("MODEL"),
+#             os.environ.get("SOURCE_LANGUAGE"),
+#             os.environ.get("TARGET_LANGUAGE"),
+#             os.environ.get("TEXT_DOMAIN"),
+#         ]
+#     ):
+#         raise KeyError("Error: Required environment variables are not set")

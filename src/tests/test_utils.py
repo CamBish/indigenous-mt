@@ -153,7 +153,7 @@ def test_eval_results():
 
 def test_chat_completion_request_api(mocker):
     mocker.patch("openai.Completion.create")
-    utils.chat_completion_request_api(["message1", "message2"])
+    utils.chat_completion_openai_api(["message1", "message2"])
     assert openai.Completion.create.called_with(
         messages=[
             {"role": "system", "content": "message1"},
