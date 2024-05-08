@@ -3,17 +3,15 @@ import re
 from enum import Enum
 from typing import Dict, List, Set, Tuple
 
+import openai
 import pandas as pd
 
 # import pyarrow.parquet as pq
 from defusedxml import ElementTree as ET
 from dotenv import load_dotenv
-
-# from IPython.display import display
-from litellm import completion
 from nltk.translate.bleu_score import sentence_bleu
-from openai import OpenAIError
-from tenacity import retry, stop_after_attempt, wait_random_exponential
+
+from chat import ollama_chat_completion, openai_chat_completion
 
 project_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 dotenv_path = os.path.join(project_dir, ".env")
@@ -30,71 +28,7 @@ class LanguageMode(Enum):
     CREE = "cree"
 
 
-# TODO label inputs and outputs
-def chat_completion_ollama_api(
-    messages,
-    model,
-    options=None,
-):
-    """Make a chat request to Ollama models"""
-    api_base = "http://localhost:11434"
-    json_data = {"model": model, "messages": messages, "api_base": api_base}
-    if options is not None:
-        json_data["options"] = options
-
-    try:
-        return completion(**json_data)
-    except OpenAIError as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
-
-
-@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
-def chat_completion_openai_api(
-    messages,
-    temperature=0,
-    max_tokens=None,
-    stop=None,
-    n=None,
-    model=None,
-):
-    """
-    Wrapper function for creating chat completion request through OpenAI.
-
-    Args:
-        messages (list): A list of messages for the chat completion.
-        functions (str, optional): A string representing the functions to be used.
-        function_call (str, optional): A string representing the function call to be used.
-        temperature (float, optional): A float representing the temperature for generating text. Defaults to 0.
-        max_tokens (int, optional): An integer representing the maximum number of tokens. Defaults to None.
-        stop (str, optional): A string representing the stopping condition for generating text. Defaults to None.
-        n (int, optional): An integer representing the number of completions to generate. Defaults to None.
-        model (str, optional): A string representing the model to be used. Defaults to "MODEL".
-
-    Returns:
-        ChatCompletion: An instance of the ChatCompletion class.
-    """
-    model = os.environ.get("MODEL", "gpt-3.5-turbo")
-    json_data = {"model": model, "messages": messages}
-    if temperature is not None:
-        json_data["temperature"] = temperature
-    if max_tokens is not None:
-        json_data["max_tokens"] = max_tokens
-    if stop is not None:
-        json_data["stop"] = stop
-    if n is not None:
-        json_data["n"] = n
-
-    try:
-        return completion(**json_data)
-    except OpenAIError as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
-
-
-def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
+def n_shot_prompting_openai(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
     """
     Perform n-shot prompting using a system message, gold standard, and parallel corpus.
 
@@ -138,18 +72,18 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
         while attempts < max_attempts:
             try:
                 # TODO should be made into a function
-                res = chat_completion_openai_api(messages=message)
+                res = openai_chat_completion(messages=message)
                 pred_txt = res["choices"][0]["message"]["content"]
                 if pred_txt is None or pred_txt == "":
                     attempts += 1
-                    OpenAIError("Empty response. Trying again...")
+                    openai.OpenAIError("Empty response. Trying again...")
 
                 rom_match = re.search(r"Romanization: (.+?)\n", pred_txt)
                 trans_match = re.search(r"Translation: (.+?)$", pred_txt)
 
                 if rom_match is None or trans_match is None:
                     attempts += 1
-                    OpenAIError("Invalid output from LLM. Trying again...")
+                    openai.OpenAIError("Invalid output from LLM. Trying again...")
                     continue
 
                 rom_txt = rom_match[1].strip("[]")
@@ -180,6 +114,31 @@ def n_shot_prompting(sys_msg, gold_std, pll_corpus, n_shots, n_samples):
             print("Max number of attempts reached. Skipping this example.")
 
     return pd.DataFrame(results, columns=cols)
+
+
+def eval_results(res_df: pd.DataFrame):
+    """
+    Calculates the BLEU scores for each translation in the given DataFrame and adds the scores as a new column.
+    Args:
+        res_df (pd.DataFrame): The DataFrame containing the translation results. It should have 'tgt_txt' and 'trans_txt' columns.
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional 'bleu_scores' column containing the BLEU scores for each translation.
+    """
+    bleu_scores = []
+    for _, row in res_df.iterrows():
+        reference = row["target_text"].split()
+        prediction = row["translated_text"].split()
+
+        bleu = sentence_bleu([reference], prediction)
+        bleu_scores.append(bleu)
+
+    res_df["bleu_scores"] = bleu_scores
+    avg_bleu = sum(bleu_scores) / len(bleu_scores)
+    print(f"Average BLEU score: {avg_bleu}")
+    max_bleu = max(bleu_scores)
+    print(f"Max BLEU score: {max_bleu}")
+
+    return res_df
 
 
 def has_parallel_cree_english_data(filename: str, filenames: List[str]) -> bool:
@@ -514,31 +473,6 @@ def load_inuktitut_parallel_corpus(path: str):
     data["source_text"].extend(temp_data["source_text"])
     data["target_text"].extend(temp_data["target_text"])
     return pd.DataFrame(data)
-
-
-def eval_results(res_df: pd.DataFrame):
-    """
-    Calculates the BLEU scores for each translation in the given DataFrame and adds the scores as a new column.
-    Args:
-        res_df (pd.DataFrame): The DataFrame containing the translation results. It should have 'tgt_txt' and 'trans_txt' columns.
-    Returns:
-        pd.DataFrame: The input DataFrame with an additional 'bleu_scores' column containing the BLEU scores for each translation.
-    """
-    bleu_scores = []
-    for _, row in res_df.iterrows():
-        reference = row["target_text"].split()
-        prediction = row["translated_text"].split()
-
-        bleu = sentence_bleu([reference], prediction)
-        bleu_scores.append(bleu)
-
-    res_df["bleu_scores"] = bleu_scores
-    avg_bleu = sum(bleu_scores) / len(bleu_scores)
-    print(f"Average BLEU score: {avg_bleu}")
-    max_bleu = max(bleu_scores)
-    print(f"Max BLEU score: {max_bleu}")
-
-    return res_df
 
 
 def generate_n_shot_examples(gold_standard, n_shots):

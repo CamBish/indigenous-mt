@@ -1,24 +1,22 @@
 # %%
 import os
-import sys
 import time
 
 import dotenv
-import openai
 import pyarrow.parquet as pq
 from IPython.display import display
 
 from utils import (
     LanguageMode,
-    check_environment_variables,
     eval_results,
-    n_shot_prompting,
+    n_shot_prompting_openai,
     serialize_gold_standards,
     serialize_parallel_corpus,
 )
 
 # How many samples to test
 N_SAMPLES = 1000
+MODEL = "ollama_chat/llama3"
 
 num_shots = [1, 5, 10, 15, 20]
 
@@ -154,7 +152,9 @@ for n_shots in num_shots:
     start = time.time()
     print(f"Start time: {start}")
     # prompt LLM
-    rdf = n_shot_prompting(sys_msg, gold_standard_df, df_subset, n_shots, N_SAMPLES)
+    rdf = n_shot_prompting_openai(
+        sys_msg, gold_standard_df, df_subset, n_shots, N_SAMPLES
+    )
     end = time.time()
     print(f"Time taken for {n_shots} experiment: {end - start}")
     # estimate average time per sample

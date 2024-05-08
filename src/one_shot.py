@@ -6,11 +6,8 @@ from dotenv import load_dotenv
 from IPython import display
 from nltk.translate.bleu_score import sentence_bleu
 
-from utils import (
-    chat_completion_openai_api,
-    check_environment_variables,
-    load_parallel_corpus,
-)
+from chat import openai_chat_completion
+from utils import check_environment_variables, load_parallel_corpus
 
 load_dotenv()
 
@@ -54,7 +51,7 @@ for _, row in subset.iterrows():
             "content": f"Please provide the {TGT} translation for the following sentences: {src_txt}",
         },
     ]
-    res = chat_completion_openai_api(messages=message)
+    res = openai_chat_completion(messages=message)
 
     pred_txt = res["choices"][0]["message"]["content"]
 
