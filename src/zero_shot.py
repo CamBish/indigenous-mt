@@ -16,7 +16,7 @@ dotenv_path = os.path.join(project_dir, ".env")
 dotenv.load_dotenv(dotenv_path)
 
 # constants
-MODEL = "ollama_chat/llama3"
+MODEL = "ollama_chat/mistral"
 N_SAMPLES = 1000
 
 TEST_INUKTITUT_SYLLABIC_PATH = os.path.join(
