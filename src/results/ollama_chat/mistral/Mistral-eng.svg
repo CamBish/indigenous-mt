@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
+<style>@font-face{font-family:'Droid Sans Mono';font-weight:normal;font-style:normal;src:url("data:application/font-woff;charset=utf-8;base64,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")format("woff");}</style>
+<style>text{font-family:'Droid Sans Mono';font-weight:normal;font-style:normal;}</style>
+<rect width="100%" height="100%" style="fill:white"></rect>
+<text transform="translate(12,558)" font-size="281" style="fill:rgb(253, 219, 215)">iqaluit</text>
+<text transform="translate(251,281)" font-size="274" style="fill:rgb(90, 0, 110)">inuit</text>
+<text transform="translate(328,788)" font-size="242" style="fill:rgb(249, 136, 173)">ikumik</text>
+<text transform="translate(353,97)" font-size="127" style="fill:rgb(245, 100, 160)">people</text>
+<text transform="translate(235,396) rotate(-90)" font-size="125" style="fill:rgb(252, 198, 194)">hello</text>
+<text transform="translate(520,648)" font-size="107" style="fill:rgb(250, 157, 180)">nunavut</text>
+<text transform="translate(722,342)" font-size="76" style="fill:rgb(254, 240, 236)">inuktitut</text>
+<text transform="translate(171,694)" font-size="68" style="fill:rgb(99, 1, 113)">dog</text>
+<text transform="translate(874,60)" font-size="64" style="fill:rgb(252, 188, 189)">language</text>
+<text transform="translate(3,792)" font-size="63" style="fill:rgb(251, 185, 188)">seal</text>
+<text transform="translate(269,347)" font-size="63" style="fill:rgb(225, 59, 152)">weather</text>
+<text transform="translate(1001,218)" font-size="60" style="fill:rgb(179, 6, 129)">going</text>
+<text transform="translate(145,742)" font-size="58" style="fill:rgb(248, 122, 168)">name</text>
+<text transform="translate(131,324) rotate(-90)" font-size="56" style="fill:rgb(225, 59, 152)">hunter</text>
+<text transform="translate(633,392)" font-size="56" style="fill:rgb(239, 89, 158)">will</text>
+<text transform="translate(18,639)" font-size="54" style="fill:rgb(180, 8, 129)">student</text>
+<text transform="translate(326,400)" font-size="54" style="fill:rgb(254, 239, 235)">teacher</text>
+<text transform="translate(5,681)" font-size="53" style="fill:rgb(217, 48, 149)">place</text>
+<text transform="translate(139,782)" font-size="49" style="fill:rgb(104, 1, 114)">caribou</text>
+<text transform="translate(532,321)" font-size="49" style="fill:rgb(251, 173, 185)">coming</text>
+<text transform="translate(1,112)" font-size="46" style="fill:rgb(171, 1, 126)">region</text>
+<text transform="translate(983,597)" font-size="46" style="fill:rgb(253, 226, 223)">school</text>
+<text transform="translate(991,120)" font-size="44" style="fill:rgb(247, 112, 164)">getting</text>
+<text transform="translate(8,43)" font-size="44" style="fill:rgb(251, 175, 186)">colder</text>
+<text transform="translate(64,594)" font-size="44" style="fill:rgb(195, 24, 137)">informal</text>
+<text transform="translate(1050,280)" font-size="44" style="fill:rgb(87, 0, 110)">hunt</text>
+<text transform="translate(44,365) rotate(-90)" font-size="43" style="fill:rgb(188, 16, 133)">qikiqtani</text>
+<text transform="translate(271,245) rotate(-90)" font-size="43" style="fill:rgb(228, 66, 154)">learning</text>
+<text transform="translate(770,383)" font-size="43" style="fill:rgb(228, 66, 154)">friend</text>
+<text transform="translate(855,260)" font-size="42" style="fill:rgb(150, 1, 123)">cold</text>
+<text transform="translate(348,592)" font-size="41" style="fill:rgb(251, 182, 188)">hunting</text>
+<text transform="translate(532,588)" font-size="40" style="fill:rgb(158, 1, 124)">forecast</text>
+<text transform="translate(625,124)" font-size="34" style="fill:rgb(110, 1, 116)">community</text>
+<text transform="translate(27,581) rotate(-90)" font-size="33" style="fill:rgb(121, 1, 119)">government</text>
+<text transform="translate(507,494)" font-size="33" style="fill:rgb(248, 124, 168)">land</text>
+<text transform="translate(7,67)" font-size="32" style="fill:rgb(251, 174, 185)">salluit</text>
+<text transform="translate(404,122)" font-size="31" style="fill:rgb(88, 0, 110)">tunngavik</text>
+<text transform="translate(1074,158)" font-size="31" style="fill:rgb(254, 233, 229)">city</text>
+<text transform="translate(853,85)" font-size="31" style="fill:rgb(247, 110, 163)">capital</text>
+<text transform="translate(298,656)" font-size="31" style="fill:rgb(108, 1, 115)">canada</text>
+<text transform="translate(967,530)" font-size="30" style="fill:rgb(155, 1, 123)">plural</text>
+<text transform="translate(21,707)" font-size="30" style="fill:rgb(254, 241, 237)">barking</text>
+<text transform="translate(1153,500) rotate(-90)" font-size="29" style="fill:rgb(251, 184, 188)">good</text>
+<text transform="translate(839,531)" font-size="29" style="fill:rgb(248, 119, 166)">bear</text>
+<text transform="translate(131,411)" font-size="28" style="fill:rgb(248, 119, 166)">polar</text>
+<text transform="translate(739,230)" font-size="28" style="fill:rgb(130, 1, 120)">many</text>
+<text transform="translate(249,302)" font-size="28" style="fill:rgb(118, 1, 118)">english</text>
+<text transform="translate(855,224)" font-size="28" style="fill:rgb(105, 1, 115)">baffin</text>
+<text transform="translate(47,730)" font-size="27" style="fill:rgb(250, 162, 182)">north</text>
+<text transform="translate(353,157)" font-size="27" style="fill:rgb(91, 0, 111)">today</text>
+<text transform="translate(516,24)" font-size="26" style="fill:rgb(220, 51, 151)">number</text>
+<text transform="translate(113,475)" font-size="26" style="fill:rgb(252, 194, 191)">elder</text>
+<text transform="translate(212,23)" font-size="25" style="fill:rgb(249, 134, 172)">children</text>
+<text transform="translate(167,227)" font-size="24" style="fill:rgb(185, 13, 132)">year</text>
+<text transform="translate(1036,400) rotate(-90)" font-size="24" style="fill:rgb(199, 29, 140)">wind</text>
+<text transform="translate(821,402)" font-size="23" style="fill:rgb(140, 1, 121)">tomorrow</text>
+<text transform="translate(805,576)" font-size="23" style="fill:rgb(250, 167, 183)">strong</text>
+<text transform="translate(330,706)" font-size="23" style="fill:rgb(199, 29, 140)">day</text>
+<text transform="translate(1068,20)" font-size="23" style="fill:rgb(253, 212, 208)">ancestors</text>
+<text transform="translate(403,20)" font-size="22" style="fill:rgb(253, 212, 208)">cloudy</text>
+<text transform="translate(846,172)" font-size="21" style="fill:rgb(251, 174, 185)">meeting</text>
+<text transform="translate(70,338)" font-size="21" style="fill:rgb(252, 194, 191)">degrees</text>
+<text transform="translate(31,498)" font-size="20" style="fill:rgb(247, 107, 162)">live</text>
+<text transform="translate(278,512) rotate(-90)" font-size="19" style="fill:rgb(252, 198, 194)">one</text>
+<text transform="translate(739,20)" font-size="19" style="fill:rgb(254, 238, 235)">incorporated</text>
+<text transform="translate(479,300)" font-size="19" style="fill:rgb(124, 1, 119)">meat</text>
+<text transform="translate(742,412)" font-size="19" style="fill:rgb(253, 214, 210)">home</text>
+<text transform="translate(957,384)" font-size="19" style="fill:rgb(207, 37, 143)">snow</text>
+<text transform="translate(843,108)" font-size="18" style="fill:rgb(249, 150, 178)">territory</text>
+<text transform="translate(81,218) rotate(-90)" font-size="18" style="fill:rgb(208, 38, 144)">waiting</text>
+<text transform="translate(628,518)" font-size="17" style="fill:rgb(253, 221, 218)">means</text>
+<text transform="translate(982,444)" font-size="16" style="fill:rgb(98, 1, 113)">nunavik</text>
+<text transform="translate(56,251)" font-size="16" style="fill:rgb(127, 1, 120)">inc</text>
+<text transform="translate(417,296)" font-size="16" style="fill:rgb(250, 153, 179)">south</text>
+<text transform="translate(559,335)" font-size="16" style="fill:rgb(253, 215, 212)">knowledge</text>
+<text transform="translate(1052,240)" font-size="16" style="fill:rgb(255, 243, 239)">syllabics</text>
+<text transform="translate(1021,682)" font-size="16" style="fill:rgb(85, 0, 109)">know</text>
+<text transform="translate(694,710) rotate(-90)" font-size="15" style="fill:rgb(252, 198, 194)">person</text>
+<text transform="translate(842,463)" font-size="15" style="fill:rgb(168, 1, 125)">culture</text>
+<text transform="translate(917,13)" font-size="15" style="fill:rgb(248, 117, 166)">carefully</text>
+<text transform="translate(153,183)" font-size="15" style="fill:rgb(254, 241, 237)">careful</text>
+<text transform="translate(1051,85)" font-size="15" style="fill:rgb(115, 1, 117)">learn</text>
+<text transform="translate(366,448)" font-size="14" style="fill:rgb(250, 168, 184)">eskimos</text>
+<text transform="translate(464,225)" font-size="14" style="fill:rgb(253, 213, 209)">playing</text>
+<text transform="translate(759,293)" font-size="14" style="fill:rgb(102, 1, 114)">temperature</text>
+<text transform="translate(742,440)" font-size="14" style="fill:rgb(253, 221, 217)">country</text>
+<text transform="translate(1018,625)" font-size="14" style="fill:rgb(249, 134, 172)">leader</text>
+<text transform="translate(831,51)" font-size="14" style="fill:rgb(252, 192, 191)">loudly</text>
+<text transform="translate(473,362)" font-size="14" style="fill:rgb(134, 1, 121)">greenland</text>
+<text transform="translate(910,696)" font-size="14" style="fill:rgb(93, 0, 111)">kayak</text>
+<text transform="translate(826,129)" font-size="14" style="fill:rgb(253, 215, 212)">kuujjuaraapik</text>
+<text transform="translate(460,667)" font-size="13" style="fill:rgb(222, 54, 151)">nti</text>
+<text transform="translate(989,242)" font-size="13" style="fill:rgb(147, 1, 122)">located</text>
+<text transform="translate(56,309)" font-size="13" style="fill:rgb(251, 182, 188)">come</text>
+<text transform="translate(37,390)" font-size="13" style="fill:rgb(253, 226, 223)">question</text>
+<text transform="translate(1020,743)" font-size="13" style="fill:rgb(249, 143, 175)">listen</text>
+<text transform="translate(964,417)" font-size="13" style="fill:rgb(210, 40, 145)">qimmiujaq</text>
+<text transform="translate(361,231)" font-size="13" style="fill:rgb(253, 216, 213)">man</text>
+<text transform="translate(455,758)" font-size="13" style="fill:rgb(95, 0, 112)">ice</text>
+<text transform="translate(1139,84)" font-size="13" style="fill:rgb(255, 243, 240)">go</text>
+<text transform="translate(419,648)" font-size="13" style="fill:rgb(252, 198, 193)">sealskin</text>
+<text transform="translate(1013,699)" font-size="12" style="fill:rgb(134, 1, 121)">whales</text>
+<text transform="translate(645,442)" font-size="12" style="fill:rgb(129, 1, 120)">speaking</text>
+<text transform="translate(488,426)" font-size="12" style="fill:rgb(252, 194, 191)">sivuniksavut</text>
+<text transform="translate(12,83)" font-size="12" style="fill:rgb(165, 1, 125)">traditional</text>
+<text transform="translate(340,459)" font-size="12" style="fill:rgb(213, 43, 147)">sun</text>
+<text transform="translate(1105,634)" font-size="12" style="fill:rgb(201, 30, 140)">family</text>
+<text transform="translate(988,572) rotate(-90)" font-size="12" style="fill:rgb(252, 209, 205)">us</text>
+<text transform="translate(1040,728)" font-size="12" style="fill:rgb(232, 74, 155)">windy</text>
+<text transform="translate(737,170)" font-size="12" style="fill:rgb(130, 1, 120)">fish</text>
+<text transform="translate(1190,595) rotate(-90)" font-size="12" style="fill:rgb(253, 221, 217)">election</text>
+<text transform="translate(745,510)" font-size="12" style="fill:rgb(225, 59, 152)">talking</text>
+<text transform="translate(1043,391)" font-size="12" style="fill:rgb(248, 131, 171)">time</text>
+<text transform="translate(307,751)" font-size="11" style="fill:rgb(185, 13, 132)">old</text>
+<text transform="translate(385,602)" font-size="11" style="fill:rgb(249, 146, 176)">council</text>
+<text transform="translate(506,796)" font-size="11" style="fill:rgb(134, 1, 121)">association</text>
+<text transform="translate(419,685)" font-size="11" style="fill:rgb(244, 98, 160)">father</text>
+<text transform="translate(414,727)" font-size="11" style="fill:rgb(252, 198, 193)">pangnirtung</text>
+<text transform="translate(929,709)" font-size="11" style="fill:rgb(95, 0, 112)">back</text>
+<text transform="translate(995,707)" font-size="11" style="fill:rgb(250, 165, 183)">teaching</text>
+<text transform="translate(806,585)" font-size="11" style="fill:rgb(229, 67, 154)">pitquiit</text>
+<text transform="translate(1106,361)" font-size="11" style="fill:rgb(140, 1, 121)">homeland</text>
+<text transform="translate(686,543) rotate(-90)" font-size="11" style="fill:rgb(204, 33, 142)">ilulissat</text>
+<text transform="translate(995,84)" font-size="11" style="fill:rgb(196, 25, 138)">west</text>
+<text transform="translate(1115,621)" font-size="11" style="fill:rgb(252, 205, 201)">hunted</text>
+<text transform="translate(730,205)" font-size="11" style="fill:rgb(78, 0, 107)">walruses</text>
+<text transform="translate(801,60)" font-size="11" style="fill:rgb(253, 215, 212)">animal</text>
+<text transform="translate(652,196)" font-size="10" style="fill:rgb(254, 241, 237)">march</text>
+<text transform="translate(971,650)" font-size="10" style="fill:rgb(208, 38, 144)">way</text>
+<text transform="translate(623,473)" font-size="10" style="fill:rgb(252, 209, 205)">morning</text>
+<text transform="translate(471,194)" font-size="10" style="fill:rgb(234, 77, 156)">sleeping</text>
+<text transform="translate(720,795)" font-size="10" style="fill:rgb(250, 168, 184)">arctic</text>
+<text transform="translate(227,396)" font-size="10" style="fill:rgb(253, 224, 221)">fishermen</text>
+<text transform="translate(635,655)" font-size="10" style="fill:rgb(93, 0, 111)">difficult</text>
+<text transform="translate(1037,398)" font-size="10" style="fill:rgb(148, 1, 123)">spoken</text>
+<text transform="translate(677,720)" font-size="10" style="fill:rgb(226, 62, 153)">outside</text>
+<text transform="translate(867,747) rotate(-90)" font-size="10" style="fill:rgb(251, 185, 188)">blowing</text>
+<text transform="translate(900,572)" font-size="10" style="fill:rgb(132, 1, 120)">july</text>
+<text transform="translate(290,633)" font-size="10" style="fill:rgb(87, 0, 110)">sivuniktaq</text>
+<text transform="translate(1165,515)" font-size="10" style="fill:rgb(202, 32, 141)">speak</text>
+<text transform="translate(44,153)" font-size="10" style="fill:rgb(237, 84, 157)">used</text>
+<text transform="translate(267,349) rotate(-90)" font-size="10" style="fill:rgb(249, 145, 176)">team</text>
+<text transform="translate(972,453)" font-size="10" style="fill:rgb(155, 1, 123)">corporation</text>
+<text transform="translate(427,443)" font-size="10" style="fill:rgb(250, 168, 184)">river</text>
+<text transform="translate(645,406)" font-size="10" style="fill:rgb(250, 160, 181)">boat</text>
+<text transform="translate(1041,606)" font-size="10" style="fill:rgb(253, 214, 210)">claim</text>
+<text transform="translate(1067,128)" font-size="10" style="fill:rgb(250, 162, 182)">difficulties</text>
+<text transform="translate(906,286)" font-size="10" style="fill:rgb(235, 80, 156)">challenges</text>
+<text transform="translate(990,169)" font-size="10" style="fill:rgb(253, 224, 221)">uquinnirijutiit</text>
+<text transform="translate(808,35)" font-size="10" style="fill:rgb(254, 241, 237)">kivalliq</text>
+</svg>
